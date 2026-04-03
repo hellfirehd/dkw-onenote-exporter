@@ -1,42 +1,79 @@
-# OneNote Markdown Exporter
+# OneNote Markdown Exporter  
 
-Exports your Microsoft 365 OneNote notebooks to GitHub-Flavored Markdown files via the Microsoft Graph API.
+<p align="center"><img src="DiggingOut.png" alt="Digging Out"></p>
 
-## Prerequisites
+Export your Microsoft 365 OneNote notebooks into clean, GitHub‑Flavored Markdown — with hierarchy, metadata, images, and attachments preserved — using the Microsoft Graph API.
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- A Microsoft 365 account with OneNote content
-- An Azure AD app registration (see below)
-- _(Optional)_ [Pandoc](https://pandoc.org/installing.html) if you prefer Pandoc for HTML→Markdown conversion
+Because your notes deserve better than being trapped in a proprietary format forever.
 
-## Azure App Registration
+---
 
-> **Important:** App-only auth for the OneNote API was removed on March 31, 2025. Only **delegated** (user) auth works.
+## 🚀 What This Tool Does
 
-1. Go to [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps) → **New registration**
-   - **Name**: anything (e.g. `OneNote Exporter`)
-   - **Supported account types**: _Accounts in any organizational directory and personal Microsoft accounts_
-   - **Redirect URI**: platform = **Public client / native**, URI = `http://localhost`
+- Authenticates via Microsoft Graph (delegated user auth)  
+- Walks your entire OneNote hierarchy (notebooks → sections → pages)  
+- Downloads page content as HTML  
+- Converts it to GitHub‑Flavored Markdown  
+- Saves images and attachments  
+- Writes YAML front matter for easy static‑site or GitHub‑wiki use  
+- Supports incremental exports so you can run it again without reprocessing everything  
 
-2. Copy the **Application (client) ID** and **Directory (tenant) ID**.
+If you have ever thought, “Why is there no official OneNote export tool?” — this is that tool.
 
-3. Under **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated permissions**, add:
+---
 
-   | Permission | Purpose |
-   |---|---|
+## 📦 Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)  
+- A Microsoft 365 account with OneNote content  
+- Your OneNote notebooks are synchronized to OneDrive
+- An Azure AD app registration (instructions below)  
+- _(Optional)_ Pandoc [(pandoc.org in Bing)](https://www.bing.com/search?q="https%3A%2F%2Fpandoc.org%2Finstalling.html") if you want the heavyweight HTML→Markdown conversion engine  
+
+---
+
+## 🔐 Azure App Registration
+
+> **Important:** Microsoft removed app‑only authentication for OneNote on **March 31, 2025**.  
+> This tool now uses **delegated** (user) authentication only.
+
+If that sentence made your eyes glaze over, do not worry — it just means you will be signing in as yourself rather than letting this app impersonate you. Because I do not have a Microsoft Partner Network ID (the thing that makes an app a “Trusted Publisher”), this exporter cannot access anyone’s account except the one you personally authorize.
+
+By following the steps below, you will create your own Azure app registration and configure it to grant this tool **read‑only access** to your Microsoft account profile — including your OneNote notebooks. In plain English: you stay in control, and the exporter only reads your notes so it can convert them to Markdown. Nothing spooky, nothing shared, nothing written back.
+
+1. Go to  
+   **Azure Portal → App registrations → New registration**
+
+   - **Name:** anything you like (e.g., `OneNote Exporter`)  
+   - **Supported account types:**  
+     _Accounts in any organizational directory and personal Microsoft accounts_  
+   - **Redirect URI:**  
+     - Platform: **Public client / native**  
+     - URI: `http://localhost`
+
+2. Copy your:
+   - **Application (client) ID**  
+   - **Directory (tenant) ID**
+
+3. Add delegated Microsoft Graph permissions:
+
+  | Permission   | Purpose                                               |
+  | ------------ | ----------------------------------------------------- |
   | `Notes.Read` | Read the signed-in user's OneNote notebooks and pages |
-   | `User.Read` | Required for delegated sign-in |
+  | `User.Read`  | Required for delegated sign-in                        |
 
-   For personal Microsoft accounts (MSA), admin consent is not required.
-   For work/school tenants, click **Grant admin consent** if your IT policy requires it.
+  - Personal Microsoft accounts: no admin consent needed  
+  - Work/school tenants: click **Grant admin consent** if required
 
-4. For personal Microsoft accounts, make sure **Supported account types** is either:
-  - **Accounts in any organizational directory and personal Microsoft accounts**
-  - **Personal Microsoft accounts only**
+4. If you are using a personal Microsoft account only, set:
 
-  If you intend to use only a personal Microsoft account, set `TenantId` to `consumers` in `appsettings.json`. Use `common` only when you intentionally want to support both work/school and personal accounts.
+   - `TenantId = "consumers"`
 
-## Configuration
+   Use `"common"` only if you intentionally want to support both personal and work accounts.
+
+---
+
+## ⚙️ Configuration
 
 ```bash
 cp src/OneNoteMdExport/appsettings.example.json src/OneNoteMdExport/appsettings.json
@@ -63,37 +100,42 @@ Edit `appsettings.json`:
 }
 ```
 
-> `TenantId` can be `"common"` for personal accounts, or your specific tenant ID / domain for work accounts.
+### Notes
 
-> For a personal-account-only setup, `"consumers"` is the safer value because it forces the sign-in flow onto the Microsoft account authority.
+- `"consumers"` is safest for personal Microsoft accounts  
+- `"common"` works for mixed environments
+- `UsePersistentTokenCache = true` lets you reuse tokens across runs (recommended once everything works)
 
-> `UsePersistentTokenCache` is disabled by default. Set it to `true` to reuse the MSAL token cache across app runs.
+---
 
-## Running
+## ▶️ Running the Export
 
 ```bash
 cd src/OneNoteMdExport
 dotnet run -- --out export
 ```
 
-On first run a browser window opens for sign-in. Subsequent requests in the same run reuse the in-memory token cache. If `UsePersistentTokenCache` is enabled, the MSAL cache is also reused across app runs.
+On first run, a browser window opens for sign‑in.  
+Subsequent requests reuse the in‑memory token cache (or persistent cache if enabled).
 
 ### CLI Options
 
-| Flag | Description |
-|---|---|
-| `--out <dir>` | Output directory (default: `export`) |
-| `--pandoc` | Use Pandoc instead of ReverseMarkdown |
-| `--pandoc-path <path>` | Path to pandoc binary (default: `pandoc`) |
-| `--no-images` | Skip image download |
-| `--no-attachments` | Skip attachment download |
-| `--no-front-matter` | Omit YAML front matter |
-| `--device-code` | Device code flow instead of interactive browser |
-| `--notebook <name>` | Export only this notebook (exact name) |
-| `--verbose` / `-v` | Debug-level logging |
-| `--help` / `-h` | Show help |
+| Flag                   | Description                                |
+| ---------------------- | ------------------------------------------ |
+| `--out <dir>`          | Output directory (default: `export`)       |
+| `--pandoc`             | Use Pandoc instead of ReverseMarkdown      |
+| `--pandoc-path <path>` | Path to Pandoc binary                      |
+| `--no-images`          | Skip image download                        |
+| `--no-attachments`     | Skip attachment download                   |
+| `--no-front-matter`    | Omit YAML front matter                     |
+| `--device-code`        | Use device code flow instead of browser    |
+| `--notebook <name>`    | Export only a specific notebook            |
+| `--verbose` / `-v`     | Debug logging                              |
+| `--help` / `-h`        | Show help                                  |
 
-## Output Structure
+---
+
+## 📁 Output Structure
 
 ```
 export/
@@ -106,10 +148,10 @@ export/
       2023-06-01 - Meeting notes.md
   Work Notebook/
     ...
-  .manifest.json        ← tracks which pages have been exported
+  .manifest.json   ← tracks incremental export state
 ```
 
-Each `.md` file begins with YAML front matter:
+Each Markdown file includes YAML front matter:
 
 ```yaml
 ---
@@ -122,24 +164,46 @@ section: "Work"
 ---
 ```
 
-## Incremental Exports
+---
 
-Re-running the tool only processes pages whose `lastModifiedDateTime` has changed since the last run. State is stored in `<output-dir>/.manifest.json`.
+## 🔄 Incremental Exports
 
-## Planned Options
+Re-running the tool processes only pages whose `lastModifiedDateTime` has changed since the previous run.
 
-The following CLI options are planned but are not implemented yet:
+State is stored in:
 
-- `--section <name>` to export only pages from a named section
-- `--max-pages <n>` to limit the number of pages processed in a run
-- `--continue-on-error` to keep exporting after per-page failures
-- `--skip-missing-pages` to explicitly ignore pages that enumerate but whose content endpoint returns `404`
+```
+<output-dir>/.manifest.json
+```
 
-## Markdown Conversion Modes
+This makes the exporter safe to run repeatedly — ideal for large notebooks or slow networks.
 
-| Mode | How | When to use |
-|---|---|---|
-| **ReverseMarkdown** (default) | In-process NuGet package | No extra setup; works everywhere |
-| **Pandoc** | External binary via `--pandoc` | Better edge-case handling; requires Pandoc installed |
+---
 
-Both modes produce GitHub-Flavored Markdown (GFM) with tables, fenced code blocks, and task lists.
+## 🛠️ Planned Features
+
+These options are on the roadmap:
+
+- `--section <name>` — export only a specific section  
+- `--max-pages <n>` — limit processing for testing or throttling  
+- `--continue-on-error` — keep going even if a page fails  
+- `--skip-missing-pages` — ignore pages that enumerate but return `404`  
+
+If you want to contribute, PRs are welcome.
+
+---
+
+## 📝 Markdown Conversion Modes
+
+| Mode                          | How                    | When to Use                              |
+| ----------------------------- | ---------------------- | ---------------------------------------- |
+| **ReverseMarkdown** (default) | Built-in NuGet package | Simple, fast, no external dependencies   |
+| **Pandoc**                    | External binary        | Best fidelity; handles tricky HTML cases |
+
+Both produce GitHub‑Flavored Markdown with tables, fenced code blocks, and task lists.
+
+---
+
+## 🎉 Final Notes
+
+This project exists because exporting OneNote should not require ritual sacrifice, manual copy‑paste, or a PhD in patience. If this tool saves you even one hour of your life, consider starring the repo — or telling someone else who is trapped in OneNote purgatory.
