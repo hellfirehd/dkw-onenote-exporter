@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using Microsoft.Graph.Models;
 using OneNoteMdExport.Cli;
 using OneNoteMdExport.Util;
 
@@ -18,9 +19,10 @@ public sealed class OneNoteGraphClient
     }
 
     /// <summary>
-    /// Yields all pages, either flat across all notebooks (default) or filtered
+    /// Yields all pages, either across all notebooks (default) or filtered
     /// to a single notebook when <see cref="ExportOptions.NotebookFilter"/> is set.
-    /// Handles @odata.nextLink pagination; requests up to 100 pages per batch.
+    /// Traverses notebook -> sections -> pages because the flat pages endpoint
+    /// can fail for accounts with a high number of sections.
     /// </summary>
     public async IAsyncEnumerable<OneNotePageInfo> EnumeratePagesAsync(
         ExportOptions opt,
@@ -38,38 +40,25 @@ public sealed class OneNoteGraphClient
         }
     }
 
-    // ── Flat enumeration ────────────────────────────────────────────────────
+    // ── Account-wide enumeration ────────────────────────────────────────────
 
     private async IAsyncEnumerable<OneNotePageInfo> EnumerateAllPagesAsync(
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        _logger.LogInformation("Enumerating all OneNote pages…");
+        _logger.LogInformation("Enumerating all OneNote pages by notebook and section…");
         int count = 0;
 
-        var response = await Retry.ExecuteAsync(
-            () => _g.Me.Onenote.Pages.GetAsync(cfg =>
-            {
-                cfg.QueryParameters.Top = 100;
-                cfg.QueryParameters.Expand = ["parentNotebook", "parentSection"];
-                cfg.QueryParameters.Orderby = ["lastModifiedDateTime desc"];
-            }, ct),
-            logger: _logger, ct: ct);
-
-        while (response is not null)
+        await foreach (var notebook in EnumerateNotebooksAsync(ct))
         {
-            foreach (var page in response.Value ?? [])
+            if (notebook.Id is null) continue;
+
+            _logger.LogDebug("Notebook: {Notebook}", notebook.DisplayName);
+
+            await foreach (var page in EnumerateNotebookPagesAsync(notebook.Id, ct))
             {
                 count++;
-                yield return OneNotePageInfo.FromGraph(page);
+                yield return page;
             }
-
-            if (response.OdataNextLink is null) break;
-
-            _logger.LogDebug("Fetching next batch…");
-            var nextLink = response.OdataNextLink;
-            response = await Retry.ExecuteAsync(
-                () => _g.Me.Onenote.Pages.WithUrl(nextLink).GetAsync(cancellationToken: ct),
-                logger: _logger, ct: ct);
         }
 
         _logger.LogInformation("Found {Count} pages.", count);
@@ -96,37 +85,218 @@ public sealed class OneNoteGraphClient
 
         _logger.LogInformation("Enumerating sections in '{Notebook}'…", notebook.DisplayName);
 
-        var notebookId = notebook.Id;
-        var sections = await Retry.ExecuteAsync(
-            () => _g.Me.Onenote.Notebooks[notebookId].Sections.GetAsync(cancellationToken: ct),
+        await foreach (var page in EnumerateNotebookPagesAsync(notebook.Id, ct))
+            yield return page;
+    }
+
+    private async IAsyncEnumerable<Notebook> EnumerateNotebooksAsync(
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var request = _g.Me.Onenote.Notebooks;
+        var response = await Retry.ExecuteAsync(
+            () => request.GetAsync(cfg =>
+            {
+                cfg.QueryParameters.Top = 100;
+                cfg.QueryParameters.Select = ["id", "displayName"];
+            }, ct),
             logger: _logger, ct: ct);
 
-        foreach (var section in sections?.Value ?? [])
+        while (response is not null)
+        {
+            foreach (var notebook in response.Value ?? [])
+                yield return notebook;
+
+            if (response.OdataNextLink is null) break;
+
+            var nextLink = response.OdataNextLink;
+            response = await Retry.ExecuteAsync(
+                () => request.WithUrl(nextLink).GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
+        }
+    }
+
+    private async IAsyncEnumerable<OneNotePageInfo> EnumerateNotebookPagesAsync(
+        string notebookId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var section in EnumerateNotebookSectionsAsync(notebookId, ct))
         {
             if (section.Id is null) continue;
+
             _logger.LogDebug("  Section: {Section}", section.DisplayName);
 
-            var sectionId = section.Id;
-            var pageResponse = await Retry.ExecuteAsync(
-                () => _g.Me.Onenote.Sections[sectionId].Pages.GetAsync(cfg =>
-                {
-                    cfg.QueryParameters.Top = 100;
-                    cfg.QueryParameters.Expand = ["parentNotebook", "parentSection"];
-                }, ct),
-                logger: _logger, ct: ct);
+            await foreach (var page in EnumerateSectionPagesAsync(section.Id, ct))
+                yield return page;
+        }
 
-            while (pageResponse is not null)
+        await foreach (var group in EnumerateNotebookSectionGroupsAsync(notebookId, ct))
+        {
+            if (group.Id is null) continue;
+
+            _logger.LogDebug("  Section group: {SectionGroup}", group.DisplayName);
+
+            await foreach (var page in EnumerateSectionGroupPagesAsync(group.Id, ct))
+                yield return page;
+        }
+    }
+
+    private async IAsyncEnumerable<OnenoteSection> EnumerateNotebookSectionsAsync(
+        string notebookId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var request = _g.Me.Onenote.Notebooks[notebookId].Sections;
+        var response = await Retry.ExecuteAsync(
+            () => request.GetAsync(cfg =>
             {
-                foreach (var page in pageResponse.Value ?? [])
-                    yield return OneNotePageInfo.FromGraph(page);
+                cfg.QueryParameters.Top = 100;
+                cfg.QueryParameters.Select = ["id", "displayName"];
+            }, ct),
+            logger: _logger, ct: ct);
 
-                if (pageResponse.OdataNextLink is null) break;
+        while (response is not null)
+        {
+            foreach (var section in response.Value ?? [])
+                yield return section;
 
-                var nextLink = pageResponse.OdataNextLink;
-                pageResponse = await Retry.ExecuteAsync(
-                    () => _g.Me.Onenote.Pages.WithUrl(nextLink).GetAsync(cancellationToken: ct),
-                    logger: _logger, ct: ct);
-            }
+            if (response.OdataNextLink is null) break;
+
+            var nextLink = response.OdataNextLink;
+            response = await Retry.ExecuteAsync(
+                () => request.WithUrl(nextLink).GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
+        }
+    }
+
+    private async IAsyncEnumerable<SectionGroup> EnumerateNotebookSectionGroupsAsync(
+        string notebookId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var request = _g.Me.Onenote.Notebooks[notebookId].SectionGroups;
+        var response = await Retry.ExecuteAsync(
+            () => request.GetAsync(cfg =>
+            {
+                cfg.QueryParameters.Top = 100;
+                cfg.QueryParameters.Select = ["id", "displayName"];
+            }, ct),
+            logger: _logger, ct: ct);
+
+        while (response is not null)
+        {
+            foreach (var group in response.Value ?? [])
+                yield return group;
+
+            if (response.OdataNextLink is null) break;
+
+            var nextLink = response.OdataNextLink;
+            response = await Retry.ExecuteAsync(
+                () => request.WithUrl(nextLink).GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
+        }
+    }
+
+    private async IAsyncEnumerable<OneNotePageInfo> EnumerateSectionGroupPagesAsync(
+        string sectionGroupId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var section in EnumerateSectionGroupSectionsAsync(sectionGroupId, ct))
+        {
+            if (section.Id is null) continue;
+
+            _logger.LogDebug("    Section: {Section}", section.DisplayName);
+
+            await foreach (var page in EnumerateSectionPagesAsync(section.Id, ct))
+                yield return page;
+        }
+
+        await foreach (var group in EnumerateChildSectionGroupsAsync(sectionGroupId, ct))
+        {
+            if (group.Id is null) continue;
+
+            _logger.LogDebug("    Section group: {SectionGroup}", group.DisplayName);
+
+            await foreach (var page in EnumerateSectionGroupPagesAsync(group.Id, ct))
+                yield return page;
+        }
+    }
+
+    private async IAsyncEnumerable<OnenoteSection> EnumerateSectionGroupSectionsAsync(
+        string sectionGroupId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var request = _g.Me.Onenote.SectionGroups[sectionGroupId].Sections;
+        var response = await Retry.ExecuteAsync(
+            () => request.GetAsync(cfg =>
+            {
+                cfg.QueryParameters.Top = 100;
+                cfg.QueryParameters.Select = ["id", "displayName"];
+            }, ct),
+            logger: _logger, ct: ct);
+
+        while (response is not null)
+        {
+            foreach (var section in response.Value ?? [])
+                yield return section;
+
+            if (response.OdataNextLink is null) break;
+
+            var nextLink = response.OdataNextLink;
+            response = await Retry.ExecuteAsync(
+                () => request.WithUrl(nextLink).GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
+        }
+    }
+
+    private async IAsyncEnumerable<SectionGroup> EnumerateChildSectionGroupsAsync(
+        string sectionGroupId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var request = _g.Me.Onenote.SectionGroups[sectionGroupId].SectionGroups;
+        var response = await Retry.ExecuteAsync(
+            () => request.GetAsync(cfg =>
+            {
+                cfg.QueryParameters.Top = 100;
+                cfg.QueryParameters.Select = ["id", "displayName"];
+            }, ct),
+            logger: _logger, ct: ct);
+
+        while (response is not null)
+        {
+            foreach (var group in response.Value ?? [])
+                yield return group;
+
+            if (response.OdataNextLink is null) break;
+
+            var nextLink = response.OdataNextLink;
+            response = await Retry.ExecuteAsync(
+                () => request.WithUrl(nextLink).GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
+        }
+    }
+
+    private async IAsyncEnumerable<OneNotePageInfo> EnumerateSectionPagesAsync(
+        string sectionId,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var request = _g.Me.Onenote.Sections[sectionId].Pages;
+        var pageResponse = await Retry.ExecuteAsync(
+            () => request.GetAsync(cfg =>
+            {
+                cfg.QueryParameters.Top = 100;
+                cfg.QueryParameters.Expand = ["parentNotebook", "parentSection"];
+            }, ct),
+            logger: _logger, ct: ct);
+
+        while (pageResponse is not null)
+        {
+            foreach (var page in pageResponse.Value ?? [])
+                yield return OneNotePageInfo.FromGraph(page);
+
+            if (pageResponse.OdataNextLink is null) break;
+
+            var nextLink = pageResponse.OdataNextLink;
+            pageResponse = await Retry.ExecuteAsync(
+                () => request.WithUrl(nextLink).GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
         }
     }
 

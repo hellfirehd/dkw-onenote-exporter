@@ -9,9 +9,10 @@ namespace OneNoteMdExport.Auth;
 public sealed class GraphAuth
 {
     // Delegated scopes required by OneNote API.
-    // App-only auth was removed March 31, 2025.
+    // Notes.Read is sufficient for exporting the signed-in user's notebooks and
+    // is supported for personal Microsoft accounts.
     private static readonly string[] Scopes =
-        ["Notes.Read.All", "User.Read"];
+        ["Notes.Read", "User.Read"];
 
     private readonly ExportOptions _opt;
     private readonly ILogger<GraphAuth> _logger;

@@ -24,11 +24,17 @@ Exports your Microsoft 365 OneNote notebooks to GitHub-Flavored Markdown files v
 
    | Permission | Purpose |
    |---|---|
-   | `Notes.Read.All` | Read all OneNote notebooks and pages |
+  | `Notes.Read` | Read the signed-in user's OneNote notebooks and pages |
    | `User.Read` | Required for delegated sign-in |
 
    For personal Microsoft accounts (MSA), admin consent is not required.
    For work/school tenants, click **Grant admin consent** if your IT policy requires it.
+
+4. For personal Microsoft accounts, make sure **Supported account types** is either:
+  - **Accounts in any organizational directory and personal Microsoft accounts**
+  - **Personal Microsoft accounts only**
+
+  If you intend to use only a personal Microsoft account, set `TenantId` to `consumers` in `appsettings.json`. Use `common` only when you intentionally want to support both work/school and personal accounts.
 
 ## Configuration
 
@@ -57,6 +63,8 @@ Edit `appsettings.json`:
 ```
 
 > `TenantId` can be `"common"` for personal accounts, or your specific tenant ID / domain for work accounts.
+
+> For a personal-account-only setup, `"consumers"` is the safer value because it forces the sign-in flow onto the Microsoft account authority.
 
 ## Running
 
