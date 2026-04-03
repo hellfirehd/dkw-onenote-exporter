@@ -1,6 +1,8 @@
 # OneNote Markdown Exporter  
 
+<!-- markdownlint-disable MD033 -->
 <p align="center"><img src="DiggingOut.png" alt="Digging Out"></p>
+<!-- markdownlint-enable MD033 -->
 
 Export your Microsoft 365 OneNote notebooks into clean, GitHub‑Flavored Markdown — with hierarchy, metadata, images, and attachments preserved — using the Microsoft Graph API.
 
@@ -62,10 +64,10 @@ By following the steps below, you will create your own Azure app registration an
   | `Notes.Read` | Read the signed-in user's OneNote notebooks and pages |
   | `User.Read`  | Required for delegated sign-in                        |
 
-  - Personal Microsoft accounts: no admin consent needed  
-  - Work/school tenants: click **Grant admin consent** if required
+  Personal Microsoft accounts: no admin consent needed.  
+  Work/school tenants: click **Grant admin consent** if required.
 
-4. If you are using a personal Microsoft account only, set:
+1. If you are using a personal Microsoft account only, set:
 
    - `TenantId = "consumers"`
 
@@ -135,9 +137,27 @@ Subsequent requests reuse the in‑memory token cache (or persistent cache if en
 
 ---
 
+## 🚢 Releases
+
+GitHub releases are published with the `Release` workflow in Actions.
+
+- Run the workflow manually when you want to publish a release.
+- The workflow calculates the version from `version.json` using Nerdbank.GitVersioning.
+- It creates the Git tag for the current commit automatically, so you do not need to create tags first.
+- It publishes self-contained executables for `win-x64` and `linux-x64` and attaches them to the GitHub release.
+- GitHub still provides the usual source code zip and tarball automatically.
+
+### Versioning
+
+- `version.json` currently uses `"version": "1.0"`.
+- With Nerdbank.GitVersioning, that becomes release versions such as `1.0.42`, where the last number comes from git height.
+- When you want to start a new line, update `version.json` to the next base version such as `1.1` and commit it.
+
+---
+
 ## 📁 Output Structure
 
-```
+```text
 export/
   Personal Notebook/
     Quick Notes/
@@ -172,7 +192,7 @@ Re-running the tool processes only pages whose `lastModifiedDateTime` has change
 
 State is stored in:
 
-```
+```text
 <output-dir>/.manifest.json
 ```
 

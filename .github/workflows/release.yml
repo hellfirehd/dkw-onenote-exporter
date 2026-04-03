@@ -1,0 +1,193 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: Create the GitHub release as a draft
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: Mark the GitHub release as a prerelease
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_VERSION: 8.0.x
+  PROJECT_PATH: src/OneNoteMdExport/OneNoteMdExport.csproj
+  TOOL_PATH: ./.tools
+  NBGV_VERSION: 3.9.50
+
+jobs:
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      release_name: ${{ steps.version.outputs.release_name }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install NBGV CLI
+        shell: pwsh
+        run: dotnet tool install --tool-path $env:TOOL_PATH nbgv --version $env:NBGV_VERSION
+
+      - name: Calculate release version
+        id: version
+        shell: pwsh
+        run: |
+          $json = & "$env:TOOL_PATH/nbgv" get-version --format json --publicRelease true | ConvertFrom-Json
+          $version = $json.SemVer2
+          $tag = "v$version"
+          $releaseName = "OneNote Markdown Exporter $tag"
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "release_name=$releaseName" >> $env:GITHUB_OUTPUT
+
+      - name: Create release tag
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          $headCommit = (git rev-parse HEAD).Trim()
+          $remoteCommit = (git ls-remote --tags origin "refs/tags/$env:TAG_NAME" | ForEach-Object {
+            if ($_ -match '^([^\s]+)') { $matches[1] }
+          } | Select-Object -First 1)
+
+          if ($remoteCommit) {
+            if ($remoteCommit -ne $headCommit) {
+              throw "Tag '$env:TAG_NAME' already exists on commit $remoteCommit, not HEAD $headCommit."
+            }
+
+            Write-Host "Tag '$env:TAG_NAME' already exists on HEAD; continuing."
+            exit 0
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$env:TAG_NAME"
+          git push origin "refs/tags/$env:TAG_NAME"
+
+  publish:
+    name: Publish ${{ matrix.rid }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            rid: win-x64
+          - runner: ubuntu-latest
+            rid: linux-x64
+
+    env:
+      PublicRelease: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check out release tag
+        run: git checkout ${{ needs.prepare.outputs.tag }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Publish executable
+        run: >-
+          dotnet publish ${{ env.PROJECT_PATH }}
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o artifacts/publish/${{ matrix.rid }}
+
+      - name: Package release asset
+        id: package
+        shell: pwsh
+        env:
+          RID: ${{ matrix.rid }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          $publishDir = Join-Path $PWD "artifacts/publish/$env:RID"
+          $packageDir = Join-Path $PWD "artifacts/packages"
+          New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
+
+          if ($env:RID -eq 'win-x64') {
+            $assetName = "OneNoteMdExport-$env:VERSION-win-x64.zip"
+          }
+          else {
+            $assetName = "OneNoteMdExport-$env:VERSION-linux-x64.tar.gz"
+          }
+
+          $assetPath = Join-Path $packageDir $assetName
+
+          if ($env:RID -eq 'win-x64') {
+            Compress-Archive -Path (Join-Path $publishDir '*') -DestinationPath $assetPath -Force
+          }
+          else {
+            tar -czf $assetPath -C $publishDir .
+          }
+
+          "asset_name=$assetName" >> $env:GITHUB_OUTPUT
+
+      - name: Upload packaged asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}-release-asset
+          path: artifacts/packages/${{ steps.package.outputs.asset_name }}
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs:
+      - prepare
+      - publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download packaged assets
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: ${{ needs.prepare.outputs.release_name }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          files: release-assets/**/*

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "cloudBuild": {
+    "buildNumber": {
+      "enabled": true
+    }
+  },
+  "release": {
+    "tagName": "v{version}"
+  }
+}
