@@ -64,10 +64,10 @@ By following the steps below, you will create your own Azure app registration an
   | `Notes.Read` | Read the signed-in user's OneNote notebooks and pages |
   | `User.Read`  | Required for delegated sign-in                        |
 
-  Personal Microsoft accounts: no admin consent needed.  
-  Work/school tenants: click **Grant admin consent** if required.
+  - Personal Microsoft accounts: no admin consent needed  
+  - Work/school tenants: click **Grant admin consent** if required
 
-1. If you are using a personal Microsoft account only, set:
+4. If you are using a personal Microsoft account only, set:
 
    - `TenantId = "consumers"`
 
@@ -119,6 +119,8 @@ dotnet run -- --out export
 
 On first run, a browser window opens for sign‑in.  
 Subsequent requests reuse the in‑memory token cache (or persistent cache if enabled).
+
+A full run log is also written to `<output-dir>/export.log`. The console shows the message text only, while the log file includes full exception details.
 
 ### CLI Options
 

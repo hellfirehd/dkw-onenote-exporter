@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
 using OneNoteMdExport.Auth;
 using OneNoteMdExport.Cli;
 using OneNoteMdExport.Graph;
+using OneNoteMdExport.Logging;
 using OneNoteMdExport.Output;
 using OneNoteMdExport.Transform;
 using Microsoft.Kiota.Abstractions;
@@ -9,13 +11,21 @@ using Microsoft.Kiota.Abstractions;
 var options = CommandLine.Parse(args);
 if (options is null) return 0;   // --help was shown
 
+var logFilePath = Path.GetFullPath(Path.Combine(options.OutputDir, "export.log"));
+Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
+
 using var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder.AddSimpleConsole(o =>
+    builder.AddConsole(options =>
+    {
+        options.FormatterName = MessageOnlyConsoleFormatter.FormatterName;
+    });
+    builder.AddConsoleFormatter<MessageOnlyConsoleFormatter, SimpleConsoleFormatterOptions>(o =>
     {
         o.SingleLine = true;
         o.TimestampFormat = "HH:mm:ss ";
     });
+    builder.AddProvider(new FileLoggerProvider(logFilePath));
     builder.SetMinimumLevel(options.Verbose ? LogLevel.Debug : LogLevel.Information);
 });
 
