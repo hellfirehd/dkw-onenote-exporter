@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Kiota.Abstractions;
 
 namespace OneNoteMdExport.Util;
 
 public static class Retry
 {
     private static readonly int[] RetryableStatus = [429, 500, 502, 503, 504];
+    private static readonly Throttle RequestThrottle = new();
 
     /// <summary>
     /// Executes <paramref name="action"/> up to <paramref name="maxRetries"/> times,
@@ -21,9 +22,10 @@ public static class Retry
         {
             try
             {
+                await RequestThrottle.WaitAsync(ct);
                 return await action();
             }
-            catch (ODataError ex) when (RetryableStatus.Contains(ex.ResponseStatusCode))
+            catch (ApiException ex) when (RetryableStatus.Contains(ex.ResponseStatusCode))
             {
                 var delay = RetryDelay(ex, attempt);
                 logger?.LogWarning(
@@ -42,10 +44,11 @@ public static class Retry
         }
 
         // Final attempt — let any exception propagate
+        await RequestThrottle.WaitAsync(ct);
         return await action();
     }
 
-    private static TimeSpan RetryDelay(ODataError ex, int attempt)
+    private static TimeSpan RetryDelay(ApiException ex, int attempt)
     {
         // Honour Retry-After header when present
         if (ex.ResponseHeaders is not null &&
@@ -54,6 +57,13 @@ public static class Retry
             var header = values.FirstOrDefault();
             if (header is not null && int.TryParse(header, out var secs))
                 return TimeSpan.FromSeconds(secs);
+
+            if (header is not null && DateTimeOffset.TryParse(header, out var retryAt))
+            {
+                var delay = retryAt - DateTimeOffset.UtcNow;
+                if (delay > TimeSpan.Zero)
+                    return delay;
+            }
         }
 
         // Exponential back-off: 2 s, 4 s, 8 s, …
