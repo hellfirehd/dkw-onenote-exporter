@@ -45,6 +45,7 @@ public static class CommandLine
                     TenantId = Str(ad, "TenantId") ?? "common",
                     ClientId = Str(ad, "ClientId") ?? string.Empty,
                     RedirectUri = Str(ad, "RedirectUri") ?? "http://localhost",
+                    UsePersistentTokenCache = Bool(ad, "UsePersistentTokenCache") ?? false,
                     OutputDir = Str(exp, "OutputDir") ?? "export",
                     UsePandoc = Bool(exp, "UsePandoc") ?? false,
                     PandocPath = Str(exp, "PandocPath") ?? "pandoc",

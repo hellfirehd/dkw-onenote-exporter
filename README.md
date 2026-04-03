@@ -49,7 +49,8 @@ Edit `appsettings.json`:
   "AzureAd": {
     "TenantId": "common",
     "ClientId": "<your-application-client-id>",
-    "RedirectUri": "http://localhost"
+    "RedirectUri": "http://localhost",
+    "UsePersistentTokenCache": false
   },
   "Export": {
     "OutputDir": "export",
@@ -66,6 +67,8 @@ Edit `appsettings.json`:
 
 > For a personal-account-only setup, `"consumers"` is the safer value because it forces the sign-in flow onto the Microsoft account authority.
 
+> `UsePersistentTokenCache` is disabled by default. Set it to `true` to reuse the MSAL token cache across app runs.
+
 ## Running
 
 ```bash
@@ -73,7 +76,7 @@ cd src/OneNoteMdExport
 dotnet run -- --out export
 ```
 
-On first run a browser window opens for sign-in. Subsequent runs use the cached in-memory token for the session.
+On first run a browser window opens for sign-in. Subsequent requests in the same run reuse the in-memory token cache. If `UsePersistentTokenCache` is enabled, the MSAL cache is also reused across app runs.
 
 ### CLI Options
 

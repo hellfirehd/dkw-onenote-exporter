@@ -36,9 +36,53 @@ public sealed class GraphAuth
             .WithRedirectUri(_opt.RedirectUri)
             .Build();
 
+        if (_opt.UsePersistentTokenCache)
+            MsalTokenCachePersistence.Enable(app.UserTokenCache, GetCachePath(), _logger);
+
         var tokenProvider = new MsalTokenProvider(app, Scopes, _opt.UseDeviceCode, _logger);
         var authProvider = new BaseBearerTokenAuthenticationProvider(tokenProvider);
         return new GraphServiceClient(authProvider);
+    }
+
+    private string GetCachePath()
+    {
+        var root = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "OneNoteMdExport");
+
+        return Path.Combine(root, $"msal-{_opt.TenantId}-{_opt.ClientId}.bin");
+    }
+}
+
+internal static class MsalTokenCachePersistence
+{
+    private static readonly object Sync = new();
+
+    public static void Enable(ITokenCache tokenCache, string cachePath, ILogger logger)
+    {
+        tokenCache.SetBeforeAccess(args =>
+        {
+            lock (Sync)
+            {
+                if (!File.Exists(cachePath)) return;
+
+                var data = File.ReadAllBytes(cachePath);
+                args.TokenCache.DeserializeMsalV3(data, shouldClearExistingCache: true);
+            }
+        });
+
+        tokenCache.SetAfterAccess(args =>
+        {
+            if (!args.HasStateChanged) return;
+
+            lock (Sync)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
+                File.WriteAllBytes(cachePath, args.TokenCache.SerializeMsalV3());
+            }
+        });
+
+        logger.LogInformation("Persistent token cache enabled at {Path}", cachePath);
     }
 }
 

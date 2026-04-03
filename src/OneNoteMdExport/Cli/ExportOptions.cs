@@ -6,6 +6,7 @@ public sealed record ExportOptions
     public string TenantId { get; init; } = "common";
     public string ClientId { get; init; } = string.Empty;
     public string RedirectUri { get; init; } = "http://localhost";
+    public bool UsePersistentTokenCache { get; init; } = false;
 
     // Output
     public string OutputDir { get; init; } = "export";
