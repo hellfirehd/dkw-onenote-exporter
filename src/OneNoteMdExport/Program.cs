@@ -4,6 +4,7 @@ using OneNoteMdExport.Cli;
 using OneNoteMdExport.Graph;
 using OneNoteMdExport.Output;
 using OneNoteMdExport.Transform;
+using Microsoft.Kiota.Abstractions;
 
 var options = CommandLine.Parse(args);
 if (options is null) return 0;   // --help was shown
@@ -33,7 +34,7 @@ try
     var converter = new HtmlToMarkdown(options, loggerFactory.CreateLogger<HtmlToMarkdown>());
     var writer    = new MarkdownWriter(layout, options);
 
-    int total = 0, skipped = 0, written = 0;
+    int total = 0, skipped = 0, written = 0, failed = 0;
 
     await foreach (var page in oneNote.EnumeratePagesAsync(options))
     {
@@ -48,18 +49,32 @@ try
 
         logger.LogInformation("Write [{Nb}/{Sec}] {Title}", page.NotebookName, page.SectionName, page.Title);
 
-        var html           = await oneNote.GetPageHtmlAsync(page.Id);
-        var normalizedHtml = await normalizer.NormalizeAsync(page, html, assets);
-        var markdown       = await converter.ConvertAsync(normalizedHtml);
+        try
+        {
+            var html           = await oneNote.GetPageHtmlAsync(page);
+            var normalizedHtml = await normalizer.NormalizeAsync(page, html, assets);
+            var markdown       = await converter.ConvertAsync(normalizedHtml);
 
-        await writer.WritePageAsync(page, markdown);
-        await manifest.MarkDoneAsync(page);
-        written++;
+            await writer.WritePageAsync(page, markdown);
+            await manifest.MarkDoneAsync(page);
+            written++;
+        }
+        catch (ApiException ex)
+        {
+            failed++;
+            logger.LogWarning(
+                ex,
+                "Skip  [{Nb}/{Sec}] {Title} ({Id}) because the page content could not be retrieved.",
+                page.NotebookName,
+                page.SectionName,
+                page.Title,
+                page.Id);
+        }
     }
 
     logger.LogInformation(
-        "Done — {Total} pages: {Written} written, {Skipped} unchanged.",
-        total, written, skipped);
+        "Done — {Total} pages: {Written} written, {Skipped} unchanged, {Failed} skipped due to errors.",
+        total, written, skipped, failed);
 
     return 0;
 }

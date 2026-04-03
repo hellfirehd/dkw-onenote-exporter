@@ -7,7 +7,8 @@ public sealed record OneNotePageInfo(
     string NotebookName,
     string SectionName,
     DateTimeOffset CreatedTime,
-    DateTimeOffset LastModifiedTime)
+    DateTimeOffset LastModifiedTime,
+    string? ContentUrl)
 {
     internal static OneNotePageInfo FromGraph(Microsoft.Graph.Models.OnenotePage p) =>
         new(
@@ -16,5 +17,6 @@ public sealed record OneNotePageInfo(
             p.ParentNotebook?.DisplayName ?? "Unknown Notebook",
             p.ParentSection?.DisplayName ?? "Unknown Section",
             p.CreatedDateTime ?? DateTimeOffset.UtcNow,
-            p.LastModifiedDateTime ?? DateTimeOffset.UtcNow);
+            p.LastModifiedDateTime ?? DateTimeOffset.UtcNow,
+            p.ContentUrl);
 }

@@ -126,6 +126,15 @@ section: "Work"
 
 Re-running the tool only processes pages whose `lastModifiedDateTime` has changed since the last run. State is stored in `<output-dir>/.manifest.json`.
 
+## Planned Options
+
+The following CLI options are planned but are not implemented yet:
+
+- `--section <name>` to export only pages from a named section
+- `--max-pages <n>` to limit the number of pages processed in a run
+- `--continue-on-error` to keep exporting after per-page failures
+- `--skip-missing-pages` to explicitly ignore pages that enumerate but whose content endpoint returns `404`
+
 ## Markdown Conversion Modes
 
 | Mode | How | When to use |

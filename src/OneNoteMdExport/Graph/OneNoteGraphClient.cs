@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using Microsoft.Kiota.Abstractions;
 using OneNoteMdExport.Cli;
 using OneNoteMdExport.Util;
 
@@ -303,12 +304,41 @@ public sealed class OneNoteGraphClient
     // ── Content fetch ────────────────────────────────────────────────────────
 
     /// <summary>Downloads the HTML content of a single page.</summary>
-    public async Task<string> GetPageHtmlAsync(string pageId, CancellationToken ct = default)
+    public async Task<string> GetPageHtmlAsync(OneNotePageInfo page, CancellationToken ct = default)
     {
-        var stream = await Retry.ExecuteAsync(
-            () => _g.Me.Onenote.Pages[pageId].Content.GetAsync(cancellationToken: ct),
-            logger: _logger, ct: ct);
+        try
+        {
+            var stream = await Retry.ExecuteAsync(
+                () => _g.Me.Onenote.Pages[page.Id].Content.GetAsync(cancellationToken: ct),
+                logger: _logger, ct: ct);
 
+            return await ReadStreamAsync(stream, ct);
+        }
+        catch (Exception ex) when (!string.IsNullOrWhiteSpace(page.ContentUrl))
+        {
+            _logger.LogWarning(
+                ex,
+                "Falling back to contentUrl for page '{Title}' ({Id}) using {ContentUrl}.",
+                page.Title,
+                page.Id,
+                page.ContentUrl);
+
+            var request = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri(page.ContentUrl!, UriKind.Absolute)
+            };
+
+            var stream = await Retry.ExecuteAsync(
+                () => _g.RequestAdapter.SendPrimitiveAsync<Stream>(request, cancellationToken: ct),
+                logger: _logger, ct: ct);
+
+            return await ReadStreamAsync(stream, ct);
+        }
+    }
+
+    private static async Task<string> ReadStreamAsync(Stream? stream, CancellationToken ct)
+    {
         if (stream is null) return string.Empty;
 
         using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
