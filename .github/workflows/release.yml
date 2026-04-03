@@ -43,7 +43,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -55,7 +55,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $json = & "$env:TOOL_PATH/nbgv" get-version --format json --publicRelease true | ConvertFrom-Json
+          $json = & "$env:TOOL_PATH/nbgv" get-version --format json --public-release=true | ConvertFrom-Json
           $version = $json.SemVer2
           $tag = "v$version"
           $releaseName = "OneNote Markdown Exporter $tag"
@@ -114,7 +114,7 @@ jobs:
         run: git checkout ${{ needs.prepare.outputs.tag }}
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
