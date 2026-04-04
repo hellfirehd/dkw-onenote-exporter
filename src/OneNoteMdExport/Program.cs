@@ -50,16 +50,29 @@ try
     var converter = new HtmlToMarkdown(options, loggerFactory.CreateLogger<HtmlToMarkdown>());
     var writer    = new MarkdownWriter(layout, options);
 
-    int total = 0, skipped = 0, written = 0, failed = 0;
+    int total = 0, skipped = 0, deferred = 0, written = 0, failed = 0;
 
     await foreach (var page in oneNote.EnumeratePagesAsync(options))
     {
         total++;
 
-        if (manifest.IsUpToDate(page))
+        var decision = manifest.GetDecision(page);
+
+        if (decision is ManifestDecision.UpToDate)
         {
             skipped++;
             logger.LogDebug("Skip  [{Nb}/{Sec}] {Title}", page.NotebookName, page.SectionName, page.Title);
+            continue;
+        }
+
+        if (decision is ManifestDecision.AlreadyAttemptedThisSweep)
+        {
+            deferred++;
+            logger.LogDebug(
+                "Defer [{Nb}/{Sec}] {Title} until the next sweep.",
+                page.NotebookName,
+                page.SectionName,
+                page.Title);
             continue;
         }
 
@@ -72,12 +85,13 @@ try
             var markdown       = await converter.ConvertAsync(normalizedHtml);
 
             await writer.WritePageAsync(page, markdown);
-            await manifest.MarkDoneAsync(page);
+            await manifest.MarkSuccessAsync(page);
             written++;
         }
         catch (ApiException ex)
         {
             failed++;
+            await manifest.MarkFailureAsync(page, ex);
             logger.LogWarning(
                 ex,
                 "Skip  [{Nb}/{Sec}] {Title} ({Id}) because the page content could not be retrieved.",
@@ -88,9 +102,11 @@ try
         }
     }
 
+    await manifest.CompleteSweepAsync();
+
     logger.LogInformation(
-        "Done — {Total} pages: {Written} written, {Skipped} unchanged, {Failed} skipped due to errors.",
-        total, written, skipped, failed);
+        "Done — {Total} pages: {Written} written, {Skipped} unchanged, {Deferred} deferred until next sweep, {Failed} failed in this sweep.",
+        total, written, skipped, deferred, failed);
 
     return 0;
 }
