@@ -224,6 +224,12 @@ Both produce GitHub‑Flavored Markdown with tables, fenced code blocks, and tas
 
 ---
 
+## License
+
+MIT - see [LICENSE.txt](LICENSE.md)
+
+---
+
 ## 🎉 Final Notes
 
 This project exists because exporting OneNote should not require ritual sacrifice, manual copy‑paste, or a PhD in patience. If this tool saves you even one hour of your life, consider starring the repo — or telling someone else who is trapped in OneNote purgatory.
