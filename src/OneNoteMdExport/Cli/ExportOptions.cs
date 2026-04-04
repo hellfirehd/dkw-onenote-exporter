@@ -15,6 +15,9 @@ public sealed record ExportOptions
     public bool IncludeImages { get; init; } = true;
     public bool IncludeAttachments { get; init; } = true;
     public bool EmitFrontMatter { get; init; } = true;
+    public int ThrottleRequestsPerMinute { get; init; } = 100;
+    public int ThrottleRequestsPerHour { get; init; } = 350;
+    public int ThrottleConcurrentRequests { get; init; } = 5;
 
     // Auth
     public bool UseDeviceCode { get; init; } = false;

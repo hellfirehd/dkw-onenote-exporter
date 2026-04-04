@@ -52,6 +52,9 @@ public static class CommandLine
                     IncludeImages = Bool(exp, "IncludeImages") ?? true,
                     IncludeAttachments = Bool(exp, "IncludeAttachments") ?? true,
                     EmitFrontMatter = Bool(exp, "EmitFrontMatter") ?? true,
+                    ThrottleRequestsPerMinute = Int(exp, "ThrottleRequestsPerMinute") ?? 100,
+                    ThrottleRequestsPerHour = Int(exp, "ThrottleRequestsPerHour") ?? 350,
+                    ThrottleConcurrentRequests = Int(exp, "ThrottleConcurrentRequests") ?? 5,
                 };
             }
             catch { /* corrupt/missing — fall through */ }
@@ -134,4 +137,11 @@ public static class CommandLine
         el.TryGetProperty(prop, out var v) &&
         v.ValueKind is JsonValueKind.True or JsonValueKind.False
             ? v.GetBoolean() : null;
+
+    private static int? Int(JsonElement el, string prop) =>
+        el.ValueKind == JsonValueKind.Object &&
+        el.TryGetProperty(prop, out var v) &&
+        v.ValueKind == JsonValueKind.Number &&
+        v.TryGetInt32(out var value)
+            ? value : null;
 }

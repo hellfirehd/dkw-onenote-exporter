@@ -6,10 +6,16 @@ using OneNoteMdExport.Graph;
 using OneNoteMdExport.Logging;
 using OneNoteMdExport.Output;
 using OneNoteMdExport.Transform;
+using OneNoteMdExport.Util;
 using Microsoft.Kiota.Abstractions;
 
 var options = CommandLine.Parse(args);
 if (options is null) return 0;   // --help was shown
+
+Retry.Configure(
+    options.ThrottleRequestsPerMinute,
+    options.ThrottleRequestsPerHour,
+    options.ThrottleConcurrentRequests);
 
 var logFilePath = Path.GetFullPath(Path.Combine(options.OutputDir, "export.log"));
 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);

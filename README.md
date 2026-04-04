@@ -97,7 +97,10 @@ Edit `appsettings.json`:
     "PandocPath": "pandoc",
     "IncludeImages": true,
     "IncludeAttachments": true,
-    "EmitFrontMatter": true
+    "EmitFrontMatter": true,
+    "ThrottleRequestsPerMinute": 100,
+    "ThrottleRequestsPerHour": 350,
+    "ThrottleConcurrentRequests": 5
   }
 }
 ```
@@ -107,6 +110,7 @@ Edit `appsettings.json`:
 - `"consumers"` is safest for personal Microsoft accounts  
 - `"common"` works for mixed environments
 - `UsePersistentTokenCache = true` lets you reuse tokens across runs (recommended once everything works)
+- The throttle settings default to conservative delegated-auth values with headroom below Microsoft's published OneNote limits
 
 ---
 
@@ -121,6 +125,18 @@ On first run, a browser window opens for sign‑in.
 Subsequent requests reuse the in‑memory token cache (or persistent cache if enabled).
 
 A full run log is also written to `<output-dir>/export.log`. The console shows the message text only, while the log file includes full exception details.
+
+### Throttling
+
+Microsoft Graph applies general throttling, and OneNote also has service-specific limits. For this exporter's delegated auth flow, Microsoft's published OneNote limits are:
+
+- 120 requests per minute
+- 400 requests per hour
+- 5 concurrent requests
+
+Microsoft also publishes higher app-only limits for OneNote (240 requests per minute, 800 per hour, and 20 concurrent requests), but this project uses delegated auth only.
+
+The exporter already retries and paces requests, but large exports can still hit these limits. OneNote resources also do not reliably return a `Retry-After` header on `429 Too Many Requests`, so recovery may require exponential backoff and, in some cases, simply rerunning the export later.
 
 ### CLI Options
 
