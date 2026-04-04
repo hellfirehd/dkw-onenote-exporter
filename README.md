@@ -64,10 +64,10 @@ By following the steps below, you will create your own Azure app registration an
   | `Notes.Read` | Read the signed-in user's OneNote notebooks and pages |
   | `User.Read`  | Required for delegated sign-in                        |
 
-  - Personal Microsoft accounts: no admin consent needed  
-  - Work/school tenants: click **Grant admin consent** if required
+  - Personal Microsoft accounts: no admin consent needed  <!-- markdownlint-disable-line MD007 -->
+  - Work/school tenants: click **Grant admin consent** if required <!-- markdownlint-disable-line MD007 -->
 
-4. If you are using a personal Microsoft account only, set:
+4. If you are using a personal Microsoft account only, set: <!-- markdownlint-disable-line MD029 -->
 
    - `TenantId = "consumers"`
 
