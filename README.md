@@ -226,7 +226,7 @@ Both produce GitHub‑Flavored Markdown with tables, fenced code blocks, and tas
 
 ## License
 
-MIT - see [LICENSE.txt](LICENSE.md)
+MIT - see [LICENSE.md](LICENSE.md)
 
 ---
 
