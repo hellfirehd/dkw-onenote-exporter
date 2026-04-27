@@ -3,28 +3,28 @@ namespace OneNoteMdExport.Cli;
 public sealed record ExportOptions
 {
     // Azure AD
-    public string TenantId { get; init; } = "common";
-    public string ClientId { get; init; } = string.Empty;
-    public string RedirectUri { get; init; } = "http://localhost";
-    public bool UsePersistentTokenCache { get; init; } = false;
+    public String TenantId { get; init; } = "common";
+    public String ClientId { get; init; } = String.Empty;
+    public String RedirectUri { get; init; } = "http://localhost";
+    public Boolean UsePersistentTokenCache { get; init; } = false;
 
     // Output
-    public string OutputDir { get; init; } = "export";
-    public bool UsePandoc { get; init; } = false;
-    public string PandocPath { get; init; } = "pandoc";
-    public bool IncludeImages { get; init; } = true;
-    public bool IncludeAttachments { get; init; } = true;
-    public bool EmitFrontMatter { get; init; } = true;
-    public int ThrottleRequestsPerMinute { get; init; } = 100;
-    public int ThrottleRequestsPerHour { get; init; } = 350;
-    public int ThrottleConcurrentRequests { get; init; } = 5;
+    public String OutputDir { get; init; } = "export";
+    public Boolean UsePandoc { get; init; } = false;
+    public String PandocPath { get; init; } = "pandoc";
+    public Boolean IncludeImages { get; init; } = true;
+    public Boolean IncludeAttachments { get; init; } = true;
+    public Boolean EmitFrontMatter { get; init; } = true;
+    public Int32 ThrottleRequestsPerMinute { get; init; } = 100;
+    public Int32 ThrottleRequestsPerHour { get; init; } = 350;
+    public Int32 ThrottleConcurrentRequests { get; init; } = 5;
 
     // Auth
-    public bool UseDeviceCode { get; init; } = false;
+    public Boolean UseDeviceCode { get; init; } = false;
 
     // Filter
-    public string? NotebookFilter { get; init; }
+    public String? NotebookFilter { get; init; }
 
     // Diagnostics
-    public bool Verbose { get; init; } = false;
+    public Boolean Verbose { get; init; } = false;
 }

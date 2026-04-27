@@ -4,7 +4,7 @@ namespace OneNoteMdExport.Cli;
 
 public static class CommandLine
 {
-    public static ExportOptions? Parse(string[] args)
+    public static ExportOptions? Parse(String[] args)
     {
         if (args.Contains("--help") || args.Contains("-h"))
         {
@@ -43,7 +43,7 @@ public static class CommandLine
                 return new ExportOptions
                 {
                     TenantId = Str(ad, "TenantId") ?? "common",
-                    ClientId = Str(ad, "ClientId") ?? string.Empty,
+                    ClientId = Str(ad, "ClientId") ?? String.Empty,
                     RedirectUri = Str(ad, "RedirectUri") ?? "http://localhost",
                     UsePersistentTokenCache = Bool(ad, "UsePersistentTokenCache") ?? false,
                     OutputDir = Str(exp, "OutputDir") ?? "export",
@@ -63,13 +63,13 @@ public static class CommandLine
         return new ExportOptions();
     }
 
-    private static ExportOptions ApplyArgs(ExportOptions opts, string[] args)
+    private static ExportOptions ApplyArgs(ExportOptions opts, String[] args)
     {
-        string? outputDir = null, pandocPath = null, notebook = null;
-        bool? usePandoc = null, noImages = null, noAttachments = null,
+        String? outputDir = null, pandocPath = null, notebook = null;
+        Boolean? usePandoc = null, noImages = null, noAttachments = null,
               noFrontMatter = null, deviceCode = null, verbose = null;
 
-        for (int i = 0; i < args.Length; i++)
+        for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
@@ -126,19 +126,19 @@ public static class CommandLine
           --help, -h           Show this help
         """);
 
-    private static string? Str(JsonElement el, string prop) =>
+    private static String? Str(JsonElement el, String prop) =>
         el.ValueKind == JsonValueKind.Object &&
         el.TryGetProperty(prop, out var v) &&
         v.ValueKind == JsonValueKind.String
             ? v.GetString() : null;
 
-    private static bool? Bool(JsonElement el, string prop) =>
+    private static Boolean? Bool(JsonElement el, String prop) =>
         el.ValueKind == JsonValueKind.Object &&
         el.TryGetProperty(prop, out var v) &&
         v.ValueKind is JsonValueKind.True or JsonValueKind.False
             ? v.GetBoolean() : null;
 
-    private static int? Int(JsonElement el, string prop) =>
+    private static Int32? Int(JsonElement el, String prop) =>
         el.ValueKind == JsonValueKind.Object &&
         el.TryGetProperty(prop, out var v) &&
         v.ValueKind == JsonValueKind.Number &&

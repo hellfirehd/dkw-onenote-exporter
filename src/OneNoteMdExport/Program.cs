@@ -1,5 +1,6 @@
-using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Kiota.Abstractions;
 using OneNoteMdExport.Auth;
 using OneNoteMdExport.Cli;
 using OneNoteMdExport.Graph;
@@ -7,7 +8,6 @@ using OneNoteMdExport.Logging;
 using OneNoteMdExport.Output;
 using OneNoteMdExport.Transform;
 using OneNoteMdExport.Util;
-using Microsoft.Kiota.Abstractions;
 
 var options = CommandLine.Parse(args);
 if (options is null) return 0;   // --help was shown
@@ -22,15 +22,14 @@ Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
 
 using var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder.AddConsole(options =>
-    {
-        options.FormatterName = MessageOnlyConsoleFormatter.FormatterName;
-    });
+    builder.AddConsole(options => options.FormatterName = MessageOnlyConsoleFormatter.FormatterName);
+
     builder.AddConsoleFormatter<MessageOnlyConsoleFormatter, SimpleConsoleFormatterOptions>(o =>
     {
         o.SingleLine = true;
         o.TimestampFormat = "HH:mm:ss ";
     });
+
     builder.AddProvider(new FileLoggerProvider(logFilePath));
     builder.SetMinimumLevel(options.Verbose ? LogLevel.Debug : LogLevel.Information);
 });
@@ -39,18 +38,18 @@ var logger = loggerFactory.CreateLogger("App");
 
 try
 {
-    var auth       = new GraphAuth(options, loggerFactory.CreateLogger<GraphAuth>());
+    var auth = new GraphAuth(options, loggerFactory.CreateLogger<GraphAuth>());
     var graphClient = await auth.CreateGraphClientAsync();
 
-    var oneNote   = new OneNoteGraphClient(graphClient, loggerFactory.CreateLogger<OneNoteGraphClient>());
-    var layout    = new PathLayout(options);
-    var manifest  = new ManifestStore(layout);
-    var assets    = new AssetDownloader(graphClient, layout, options, loggerFactory.CreateLogger<AssetDownloader>());
+    var oneNote = new OneNoteGraphClient(graphClient, loggerFactory.CreateLogger<OneNoteGraphClient>());
+    var layout = new PathLayout(options);
+    var manifest = new ManifestStore(layout);
+    var assets = new AssetDownloader(graphClient, layout, options, loggerFactory.CreateLogger<AssetDownloader>());
     var normalizer = new OneNoteHtmlNormalizer(options, loggerFactory.CreateLogger<OneNoteHtmlNormalizer>());
     var converter = new HtmlToMarkdown(options, loggerFactory.CreateLogger<HtmlToMarkdown>());
-    var writer    = new MarkdownWriter(layout, options);
+    var writer = new MarkdownWriter(layout, options);
 
-    int total = 0, skipped = 0, deferred = 0, written = 0, failed = 0;
+    Int32 total = 0, skipped = 0, deferred = 0, written = 0, failed = 0;
 
     await foreach (var page in oneNote.EnumeratePagesAsync(options))
     {
@@ -80,9 +79,9 @@ try
 
         try
         {
-            var html           = await oneNote.GetPageHtmlAsync(page);
+            var html = await oneNote.GetPageHtmlAsync(page);
             var normalizedHtml = await normalizer.NormalizeAsync(page, html, assets);
-            var markdown       = await converter.ConvertAsync(normalizedHtml);
+            var markdown = await converter.ConvertAsync(normalizedHtml);
 
             await writer.WritePageAsync(page, markdown);
             await manifest.MarkSuccessAsync(page);

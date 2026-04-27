@@ -17,9 +17,9 @@ public sealed class OneNoteHtmlNormalizer
         _logger = logger;
     }
 
-    public async Task<string> NormalizeAsync(
+    public async Task<String> NormalizeAsync(
         OneNotePageInfo page,
-        string html,
+        String html,
         AssetDownloader assets,
         CancellationToken ct = default)
     {
@@ -51,11 +51,11 @@ public sealed class OneNoteHtmlNormalizer
         foreach (var img in images.ToList())
         {
             // Prefer full-resolution src; fall back to regular src
-            string? src = img.Attributes["data-fullres-src"]?.Value
+            String? src = img.Attributes["data-fullres-src"]?.Value
                        ?? img.Attributes["src"]?.Value;
-            string? mimeType = img.Attributes["data-src-type"]?.Value;
+            String? mimeType = img.Attributes["data-src-type"]?.Value;
 
-            if (string.IsNullOrEmpty(src)) continue;
+            if (String.IsNullOrEmpty(src)) continue;
 
             var localPath = await assets.DownloadResourceAsync(page, src, mimeType, ct);
             if (localPath is not null)
@@ -115,7 +115,7 @@ public sealed class OneNoteHtmlNormalizer
             if (p.Descendants().Any(n => n.Name is "img" or "object" or "video"))
                 continue;
 
-            if (string.IsNullOrWhiteSpace(p.InnerText))
+            if (String.IsNullOrWhiteSpace(p.InnerText))
                 p.ParentNode?.RemoveChild(p);
         }
     }

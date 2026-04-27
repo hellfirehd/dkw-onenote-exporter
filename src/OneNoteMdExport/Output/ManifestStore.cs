@@ -10,7 +10,7 @@ namespace OneNoteMdExport.Output;
 /// </summary>
 public sealed class ManifestStore
 {
-    private readonly string _path;
+    private readonly String _path;
     private ManifestDocument _manifest = new();
 
     private static readonly JsonSerializerOptions JsonOpts =
@@ -33,7 +33,7 @@ public sealed class ManifestStore
             }
             else
             {
-                var legacy = JsonSerializer.Deserialize<Dictionary<string, DateTimeOffset>>(json) ?? [];
+                var legacy = JsonSerializer.Deserialize<Dictionary<String, DateTimeOffset>>(json) ?? [];
                 _manifest = UpgradeLegacy(legacy);
             }
 
@@ -99,7 +99,7 @@ public sealed class ManifestStore
         await SaveAsync(ct);
     }
 
-    private ManifestPageState GetOrCreateState(string pageId)
+    private ManifestPageState GetOrCreateState(String pageId)
     {
         if (_manifest.Pages.TryGetValue(pageId, out var state))
         {
@@ -117,7 +117,7 @@ public sealed class ManifestStore
         await File.WriteAllTextAsync(_path, json, ct);
     }
 
-    private static ManifestDocument UpgradeLegacy(Dictionary<string, DateTimeOffset> legacy)
+    private static ManifestDocument UpgradeLegacy(Dictionary<String, DateTimeOffset> legacy)
     {
         var manifest = new ManifestDocument();
 
@@ -145,17 +145,17 @@ public enum ManifestDecision
 
 public sealed class ManifestDocument
 {
-    public int SchemaVersion { get; set; } = 2;
-    public int ActiveSweep { get; set; } = 1;
-    public Dictionary<string, ManifestPageState> Pages { get; set; } = [];
+    public Int32 SchemaVersion { get; set; } = 2;
+    public Int32 ActiveSweep { get; set; } = 1;
+    public Dictionary<String, ManifestPageState> Pages { get; set; } = [];
 }
 
 public sealed class ManifestPageState
 {
     public DateTimeOffset? LastSucceededModifiedTime { get; set; }
     public DateTimeOffset? LastAttemptedModifiedTime { get; set; }
-    public int? LastAttemptSweep { get; set; }
-    public string? LastOutcome { get; set; }
-    public int? LastErrorStatus { get; set; }
-    public string? LastErrorMessage { get; set; }
+    public Int32? LastAttemptSweep { get; set; }
+    public String? LastOutcome { get; set; }
+    public Int32? LastErrorStatus { get; set; }
+    public String? LastErrorMessage { get; set; }
 }

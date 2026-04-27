@@ -18,7 +18,7 @@ public sealed class MarkdownWriter
 
     public async Task WritePageAsync(
         OneNotePageInfo page,
-        string markdown,
+        String markdown,
         CancellationToken ct = default)
     {
         var path = _layout.PagePath(page);
@@ -43,6 +43,6 @@ public sealed class MarkdownWriter
         await File.WriteAllTextAsync(path, markdown, Encoding.UTF8, ct);
     }
 
-    private static string EscapeYaml(string s) =>
+    private static String EscapeYaml(String s) =>
         s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

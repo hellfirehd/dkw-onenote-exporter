@@ -16,7 +16,7 @@ public sealed class AssetDownloader
     private readonly ILogger<AssetDownloader> _logger;
 
     // Cache resource URL → relative local path so the same image isn't downloaded twice
-    private readonly Dictionary<string, string> _cache = [];
+    private readonly Dictionary<String, String> _cache = [];
 
     // Extracts the OneNote resource ID from a Graph resource URL
     private static readonly Regex ResourceIdRegex = new(
@@ -39,10 +39,10 @@ public sealed class AssetDownloader
     /// Downloads the resource at <paramref name="url"/> into the page's assets directory
     /// and returns the relative path from the page's directory, or <c>null</c> if skipped/failed.
     /// </summary>
-    public async Task<string?> DownloadResourceAsync(
+    public async Task<String?> DownloadResourceAsync(
         OneNotePageInfo page,
-        string url,
-        string? mimeType,
+        String url,
+        String? mimeType,
         CancellationToken ct = default)
     {
         if (!ShouldDownload(mimeType)) return null;
@@ -94,7 +94,7 @@ public sealed class AssetDownloader
         }
     }
 
-    private bool ShouldDownload(string? mimeType)
+    private Boolean ShouldDownload(String? mimeType)
     {
         if (mimeType is null) return _opt.IncludeImages; // assume image when unknown
         if (mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
@@ -102,7 +102,7 @@ public sealed class AssetDownloader
         return _opt.IncludeAttachments;
     }
 
-    private static string GuessExtension(string? mimeType, string url)
+    private static String GuessExtension(String? mimeType, String url)
     {
         if (mimeType is not null)
         {
@@ -122,6 +122,6 @@ public sealed class AssetDownloader
         // Fall back to URL extension
         var urlPath = url.Split('?')[0];
         var ext = Path.GetExtension(urlPath);
-        return string.IsNullOrEmpty(ext) ? ".bin" : ext;
+        return String.IsNullOrEmpty(ext) ? ".bin" : ext;
     }
 }

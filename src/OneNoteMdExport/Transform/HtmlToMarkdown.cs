@@ -16,9 +16,9 @@ public sealed class HtmlToMarkdown
         _logger = logger;
     }
 
-    public async Task<string> ConvertAsync(string html, CancellationToken ct = default)
+    public async Task<String> ConvertAsync(String html, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+        if (String.IsNullOrWhiteSpace(html)) return String.Empty;
 
         return _opt.UsePandoc
             ? await ConvertWithPandocAsync(html, ct)
@@ -27,7 +27,7 @@ public sealed class HtmlToMarkdown
 
     // ── ReverseMarkdown (in-process, default) ────────────────────────────────
 
-    private static string ConvertWithReverseMarkdown(string html)
+    private static String ConvertWithReverseMarkdown(String html)
     {
         var config = new Config
         {
@@ -42,7 +42,7 @@ public sealed class HtmlToMarkdown
 
     // ── Pandoc (external binary, optional) ──────────────────────────────────
 
-    private async Task<string> ConvertWithPandocAsync(string html, CancellationToken ct)
+    private async Task<String> ConvertWithPandocAsync(String html, CancellationToken ct)
     {
         var tempIn = Path.GetTempFileName();
         var tempOut = Path.ChangeExtension(Path.GetTempFileName(), ".md");

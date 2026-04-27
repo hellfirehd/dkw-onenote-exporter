@@ -47,7 +47,7 @@ public sealed class OneNoteGraphClient
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         _logger.LogInformation("Enumerating all OneNote pages by notebook and section…");
-        int count = 0;
+        var count = 0;
 
         await foreach (var notebook in EnumerateNotebooksAsync(ct))
         {
@@ -68,7 +68,7 @@ public sealed class OneNoteGraphClient
     // ── Filtered enumeration (notebook → section → pages) ───────────────────
 
     private async IAsyncEnumerable<OneNotePageInfo> EnumerateByNotebookAsync(
-        string notebookName,
+        String notebookName,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var notebooks = await Retry.ExecuteAsync(
@@ -76,7 +76,7 @@ public sealed class OneNoteGraphClient
             logger: _logger, ct: ct);
 
         var notebook = notebooks?.Value?.FirstOrDefault(n =>
-            string.Equals(n.DisplayName, notebookName, StringComparison.OrdinalIgnoreCase));
+            String.Equals(n.DisplayName, notebookName, StringComparison.OrdinalIgnoreCase));
 
         if (notebook?.Id is null)
         {
@@ -117,7 +117,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<OneNotePageInfo> EnumerateNotebookPagesAsync(
-        string notebookId,
+        String notebookId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         await foreach (var section in EnumerateNotebookSectionsAsync(notebookId, ct))
@@ -142,7 +142,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<OnenoteSection> EnumerateNotebookSectionsAsync(
-        string notebookId,
+        String notebookId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var request = _g.Me.Onenote.Notebooks[notebookId].Sections;
@@ -169,7 +169,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<SectionGroup> EnumerateNotebookSectionGroupsAsync(
-        string notebookId,
+        String notebookId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var request = _g.Me.Onenote.Notebooks[notebookId].SectionGroups;
@@ -196,7 +196,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<OneNotePageInfo> EnumerateSectionGroupPagesAsync(
-        string sectionGroupId,
+        String sectionGroupId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         await foreach (var section in EnumerateSectionGroupSectionsAsync(sectionGroupId, ct))
@@ -221,7 +221,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<OnenoteSection> EnumerateSectionGroupSectionsAsync(
-        string sectionGroupId,
+        String sectionGroupId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var request = _g.Me.Onenote.SectionGroups[sectionGroupId].Sections;
@@ -248,7 +248,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<SectionGroup> EnumerateChildSectionGroupsAsync(
-        string sectionGroupId,
+        String sectionGroupId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var request = _g.Me.Onenote.SectionGroups[sectionGroupId].SectionGroups;
@@ -275,7 +275,7 @@ public sealed class OneNoteGraphClient
     }
 
     private async IAsyncEnumerable<OneNotePageInfo> EnumerateSectionPagesAsync(
-        string sectionId,
+        String sectionId,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var request = _g.Me.Onenote.Sections[sectionId].Pages;
@@ -304,7 +304,7 @@ public sealed class OneNoteGraphClient
     // ── Content fetch ────────────────────────────────────────────────────────
 
     /// <summary>Downloads the HTML content of a single page.</summary>
-    public async Task<string> GetPageHtmlAsync(OneNotePageInfo page, CancellationToken ct = default)
+    public async Task<String> GetPageHtmlAsync(OneNotePageInfo page, CancellationToken ct = default)
     {
         try
         {
@@ -314,7 +314,7 @@ public sealed class OneNoteGraphClient
 
             return await ReadStreamAsync(stream, ct);
         }
-        catch (Exception ex) when (!string.IsNullOrWhiteSpace(page.ContentUrl))
+        catch (Exception ex) when (!String.IsNullOrWhiteSpace(page.ContentUrl))
         {
             _logger.LogWarning(
                 ex,
@@ -337,9 +337,9 @@ public sealed class OneNoteGraphClient
         }
     }
 
-    private static async Task<string> ReadStreamAsync(Stream? stream, CancellationToken ct)
+    private static async Task<String> ReadStreamAsync(Stream? stream, CancellationToken ct)
     {
-        if (stream is null) return string.Empty;
+        if (stream is null) return String.Empty;
 
         using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
         return await reader.ReadToEndAsync(ct);

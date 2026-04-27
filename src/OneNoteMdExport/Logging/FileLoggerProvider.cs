@@ -6,9 +6,9 @@ namespace OneNoteMdExport.Logging;
 public sealed class FileLoggerProvider : ILoggerProvider
 {
     private readonly StreamWriter _writer;
-    private readonly object _sync = new();
+    private readonly Object _sync = new();
 
-    public FileLoggerProvider(string path)
+    public FileLoggerProvider(String path)
     {
         _writer = new StreamWriter(new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
         {
@@ -16,26 +16,26 @@ public sealed class FileLoggerProvider : ILoggerProvider
         };
     }
 
-    public ILogger CreateLogger(string categoryName) => new FileLogger(categoryName, _writer, _sync);
+    public ILogger CreateLogger(String categoryName) => new FileLogger(categoryName, _writer, _sync);
 
     public void Dispose() => _writer.Dispose();
 
-    private sealed class FileLogger(string categoryName, StreamWriter writer, object sync) : ILogger
+    private sealed class FileLogger(String categoryName, StreamWriter writer, Object sync) : ILogger
     {
-        private readonly string _categoryName = categoryName;
+        private readonly String _categoryName = categoryName;
         private readonly StreamWriter _writer = writer;
-        private readonly object _sync = sync;
+        private readonly Object _sync = sync;
 
         public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
 
-        public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
+        public Boolean IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
         public void Log<TState>(
             LogLevel logLevel,
             EventId eventId,
             TState state,
             Exception? exception,
-            Func<TState, Exception?, string> formatter)
+            Func<TState, Exception?, String> formatter)
         {
             ArgumentNullException.ThrowIfNull(formatter);
 
@@ -43,7 +43,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
                 return;
 
             var message = formatter(state, exception);
-            if (string.IsNullOrWhiteSpace(message) && exception is null)
+            if (String.IsNullOrWhiteSpace(message) && exception is null)
                 return;
 
             var entry = new StringBuilder()

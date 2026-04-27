@@ -10,7 +10,7 @@ public sealed class Throttle : IDisposable
     private readonly SemaphoreSlim _bucket;
     private readonly TimeSpan _window;
 
-    public Throttle(int maxPerWindow, double windowSeconds)
+    public Throttle(Int32 maxPerWindow, Double windowSeconds)
     {
         _bucket = new SemaphoreSlim(maxPerWindow, maxPerWindow);
         _window = TimeSpan.FromSeconds(windowSeconds);
