@@ -6,7 +6,7 @@ using OneNoteMdExport.Cli;
 
 namespace OneNoteMdExport.Auth;
 
-public sealed class GraphAuth
+public sealed class GraphAuth(ExportOptions opt, ILogger<GraphAuth> logger)
 {
     // Delegated scopes required by OneNote API.
     // Notes.Read is sufficient for exporting the signed-in user's notebooks and
@@ -14,14 +14,8 @@ public sealed class GraphAuth
     private static readonly String[] Scopes =
         ["Notes.Read", "User.Read"];
 
-    private readonly ExportOptions _opt;
-    private readonly ILogger<GraphAuth> _logger;
-
-    public GraphAuth(ExportOptions opt, ILogger<GraphAuth> logger)
-    {
-        _opt = opt;
-        _logger = logger;
-    }
+    private readonly ExportOptions _opt = opt;
+    private readonly ILogger<GraphAuth> _logger = logger;
 
     public async Task<GraphServiceClient> CreateGraphClientAsync()
     {
@@ -89,27 +83,19 @@ internal static class MsalTokenCachePersistence
 }
 
 /// <summary>Bridges MSAL to the Kiota authentication abstraction used by Graph SDK v5.</summary>
-internal sealed class MsalTokenProvider : IAccessTokenProvider
+internal sealed class MsalTokenProvider(
+    IPublicClientApplication app,
+    String[] scopes,
+    Boolean useDeviceCode,
+    ILogger logger) : IAccessTokenProvider
 {
-    private readonly IPublicClientApplication _app;
-    private readonly String[] _scopes;
-    private readonly Boolean _useDeviceCode;
-    private readonly ILogger _logger;
+    private readonly IPublicClientApplication _app = app;
+    private readonly String[] _scopes = scopes;
+    private readonly Boolean _useDeviceCode = useDeviceCode;
+    private readonly ILogger _logger = logger;
 
     public AllowedHostsValidator AllowedHostsValidator { get; } =
         new(["graph.microsoft.com"]);
-
-    public MsalTokenProvider(
-        IPublicClientApplication app,
-        String[] scopes,
-        Boolean useDeviceCode,
-        ILogger logger)
-    {
-        _app = app;
-        _scopes = scopes;
-        _useDeviceCode = useDeviceCode;
-        _logger = logger;
-    }
 
     public async Task<String> GetAuthorizationTokenAsync(
         Uri uri,

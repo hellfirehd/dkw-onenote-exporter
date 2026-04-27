@@ -5,16 +5,10 @@ using OneNoteMdExport.Util;
 
 namespace OneNoteMdExport.Output;
 
-public sealed class MarkdownWriter
+public sealed class MarkdownWriter(PathLayout layout, ExportOptions opt)
 {
-    private readonly PathLayout _layout;
-    private readonly ExportOptions _opt;
-
-    public MarkdownWriter(PathLayout layout, ExportOptions opt)
-    {
-        _layout = layout;
-        _opt = opt;
-    }
+    private readonly PathLayout _layout = layout;
+    private readonly ExportOptions _opt = opt;
 
     public async Task WritePageAsync(
         OneNotePageInfo page,

@@ -8,16 +8,10 @@ using OneNoteMdExport.Util;
 
 namespace OneNoteMdExport.Graph;
 
-public sealed class OneNoteGraphClient
+public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGraphClient> logger)
 {
-    private readonly GraphServiceClient _g;
-    private readonly ILogger<OneNoteGraphClient> _logger;
-
-    public OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGraphClient> logger)
-    {
-        _g = g;
-        _logger = logger;
-    }
+    private readonly GraphServiceClient _g = g;
+    private readonly ILogger<OneNoteGraphClient> _logger = logger;
 
     /// <summary>
     /// Yields all pages, either across all notebooks (default) or filtered

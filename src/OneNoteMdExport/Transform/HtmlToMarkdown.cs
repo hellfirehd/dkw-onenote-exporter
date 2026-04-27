@@ -5,16 +5,10 @@ using ReverseMarkdown;
 
 namespace OneNoteMdExport.Transform;
 
-public sealed class HtmlToMarkdown
+public sealed class HtmlToMarkdown(ExportOptions opt, ILogger<HtmlToMarkdown> logger)
 {
-    private readonly ExportOptions _opt;
-    private readonly ILogger<HtmlToMarkdown> _logger;
-
-    public HtmlToMarkdown(ExportOptions opt, ILogger<HtmlToMarkdown> logger)
-    {
-        _opt = opt;
-        _logger = logger;
-    }
+    private readonly ExportOptions _opt = opt;
+    private readonly ILogger<HtmlToMarkdown> _logger = logger;
 
     public async Task<String> ConvertAsync(String html, CancellationToken ct = default)
     {

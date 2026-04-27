@@ -5,16 +5,10 @@ namespace OneNoteMdExport.Util;
 /// and releases it after <paramref name="windowSeconds"/> seconds, keeping the
 /// request rate at most <paramref name="maxPerWindow"/> per window.
 /// </summary>
-public sealed class Throttle : IDisposable
+public sealed class Throttle(Int32 maxPerWindow, Double windowSeconds) : IDisposable
 {
-    private readonly SemaphoreSlim _bucket;
-    private readonly TimeSpan _window;
-
-    public Throttle(Int32 maxPerWindow, Double windowSeconds)
-    {
-        _bucket = new SemaphoreSlim(maxPerWindow, maxPerWindow);
-        _window = TimeSpan.FromSeconds(windowSeconds);
-    }
+    private readonly SemaphoreSlim _bucket = new SemaphoreSlim(maxPerWindow, maxPerWindow);
+    private readonly TimeSpan _window = TimeSpan.FromSeconds(windowSeconds);
 
     public async Task WaitAsync(CancellationToken ct = default)
     {

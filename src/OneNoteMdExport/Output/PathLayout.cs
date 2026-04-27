@@ -4,11 +4,9 @@ using OneNoteMdExport.Util;
 
 namespace OneNoteMdExport.Output;
 
-public sealed class PathLayout
+public sealed class PathLayout(ExportOptions opt)
 {
-    private readonly ExportOptions _opt;
-
-    public PathLayout(ExportOptions opt) => _opt = opt;
+    private readonly ExportOptions _opt = opt;
 
     public String Root => Path.GetFullPath(_opt.OutputDir);
 

@@ -8,12 +8,16 @@ using OneNoteMdExport.Util;
 
 namespace OneNoteMdExport.Output;
 
-public sealed class AssetDownloader
+public sealed class AssetDownloader(
+    GraphServiceClient g,
+    PathLayout layout,
+    ExportOptions opt,
+    ILogger<AssetDownloader> logger)
 {
-    private readonly GraphServiceClient _g;
-    private readonly PathLayout _layout;
-    private readonly ExportOptions _opt;
-    private readonly ILogger<AssetDownloader> _logger;
+    private readonly GraphServiceClient _g = g;
+    private readonly PathLayout _layout = layout;
+    private readonly ExportOptions _opt = opt;
+    private readonly ILogger<AssetDownloader> _logger = logger;
 
     // Cache resource URL → relative local path so the same image isn't downloaded twice
     private readonly Dictionary<String, String> _cache = [];
@@ -22,18 +26,6 @@ public sealed class AssetDownloader
     private static readonly Regex ResourceIdRegex = new(
         @"/onenote/resources/([^/?]+)/content",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-    public AssetDownloader(
-        GraphServiceClient g,
-        PathLayout layout,
-        ExportOptions opt,
-        ILogger<AssetDownloader> logger)
-    {
-        _g = g;
-        _layout = layout;
-        _opt = opt;
-        _logger = logger;
-    }
 
     /// <summary>
     /// Downloads the resource at <paramref name="url"/> into the page's assets directory

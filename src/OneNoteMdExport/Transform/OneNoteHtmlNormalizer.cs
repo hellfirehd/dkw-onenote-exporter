@@ -6,16 +6,10 @@ using OneNoteMdExport.Output;
 
 namespace OneNoteMdExport.Transform;
 
-public sealed class OneNoteHtmlNormalizer
+public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtmlNormalizer> logger)
 {
-    private readonly ExportOptions _opt;
-    private readonly ILogger<OneNoteHtmlNormalizer> _logger;
-
-    public OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtmlNormalizer> logger)
-    {
-        _opt = opt;
-        _logger = logger;
-    }
+    private readonly ExportOptions _opt = opt;
+    private readonly ILogger<OneNoteHtmlNormalizer> _logger = logger;
 
     public async Task<String> NormalizeAsync(
         OneNotePageInfo page,
