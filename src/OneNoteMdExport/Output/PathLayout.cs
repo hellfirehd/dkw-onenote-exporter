@@ -12,16 +12,15 @@ public sealed class PathLayout(ExportOptions opt)
 
     /// <summary>
     /// Returns the output path for a page:
-    /// <c>{Root}/{Notebook}/{Section}/{CreatedDate} - {Title}.md</c>
+    /// <c>{Root}/{Notebook}/{Section}/{Title}.md</c>
     /// </summary>
     public String PagePath(OneNotePageInfo p)
     {
         var notebook = Slug.FolderName(p.NotebookName);
         var section = Slug.FolderName(p.SectionName);
-        var date = p.CreatedTime.ToString("yyyy-MM-dd");
         var title = Slug.FileName(p.Title);
 
-        return Path.Combine(Root, notebook, section, $"{date} - {title}.md");
+        return Path.Combine(Root, notebook, section, $"{title}.md");
     }
 
     public String AssetsDir(OneNotePageInfo p)
