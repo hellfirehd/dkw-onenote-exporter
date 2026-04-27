@@ -26,7 +26,6 @@ public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtml
         }
 
         StripStyles(doc);
-        NormalizeDataTagHeadings(doc);
         RemoveEmptyParagraphs(doc);
 
         var body = doc.DocumentNode.SelectSingleNode("//body");
@@ -93,19 +92,6 @@ public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtml
             node.Attributes.Remove("data-tag");
             node.Attributes.Remove("id");
         }
-    }
-
-    // ── Heading normalisation ────────────────────────────────────────────────
-
-    /// <summary>
-    /// OneNote often emits <c>&lt;p data-tag="h1"&gt;</c> instead of real heading elements.
-    /// Promote those to proper h1-h6 tags so the Markdown converter produces # headings.
-    /// </summary>
-    private static void NormalizeDataTagHeadings(HtmlDocument doc)
-    {
-        // These are stripped by StripStyles, so read them before that — however
-        // we call StripStyles after this method, so data-tag is still present here.
-        // (Called in correct order in NormalizeAsync.)
     }
 
     // ── Empty paragraph removal ──────────────────────────────────────────────
