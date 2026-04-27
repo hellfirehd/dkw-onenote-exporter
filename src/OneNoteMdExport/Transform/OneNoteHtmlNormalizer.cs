@@ -21,7 +21,9 @@ public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtml
         doc.LoadHtml(html);
 
         if (_opt.IncludeImages)
+        {
             await ProcessImagesAsync(doc, page, assets, ct);
+        }
 
         StripStyles(doc);
         NormalizeDataTagHeadings(doc);
@@ -40,16 +42,22 @@ public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtml
         CancellationToken ct)
     {
         var images = doc.DocumentNode.SelectNodes("//img");
-        if (images is null) return;
+        if (images is null)
+        {
+            return;
+        }
 
         foreach (var img in images.ToList())
         {
             // Prefer full-resolution src; fall back to regular src
-            String? src = img.Attributes["data-fullres-src"]?.Value
+            var src = img.Attributes["data-fullres-src"]?.Value
                        ?? img.Attributes["src"]?.Value;
-            String? mimeType = img.Attributes["data-src-type"]?.Value;
+            var mimeType = img.Attributes["data-src-type"]?.Value;
 
-            if (String.IsNullOrEmpty(src)) continue;
+            if (String.IsNullOrEmpty(src))
+            {
+                continue;
+            }
 
             var localPath = await assets.DownloadResourceAsync(page, src, mimeType, ct);
             if (localPath is not null)
@@ -73,7 +81,11 @@ public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtml
     {
         foreach (var node in doc.DocumentNode.DescendantsAndSelf().ToList())
         {
-            if (node.NodeType != HtmlNodeType.Element) continue;
+            if (node.NodeType != HtmlNodeType.Element)
+            {
+                continue;
+            }
+
             node.Attributes.Remove("style");
             node.Attributes.Remove("class");
             node.Attributes.Remove("lang");
@@ -101,16 +113,23 @@ public sealed class OneNoteHtmlNormalizer(ExportOptions opt, ILogger<OneNoteHtml
     private static void RemoveEmptyParagraphs(HtmlDocument doc)
     {
         var paras = doc.DocumentNode.SelectNodes("//p");
-        if (paras is null) return;
+        if (paras is null)
+        {
+            return;
+        }
 
         foreach (var p in paras.ToList())
         {
             // Keep paragraphs that contain images or other media
             if (p.Descendants().Any(n => n.Name is "img" or "object" or "video"))
+            {
                 continue;
+            }
 
             if (String.IsNullOrWhiteSpace(p.InnerText))
+            {
                 p.ParentNode?.RemoveChild(p);
+            }
         }
     }
 }

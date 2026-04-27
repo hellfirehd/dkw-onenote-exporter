@@ -37,6 +37,6 @@ public sealed class MarkdownWriter(PathLayout layout, ExportOptions opt)
         await File.WriteAllTextAsync(path, markdown, Encoding.UTF8, ct);
     }
 
-    private static String EscapeYaml(String s) =>
-        s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    private static String EscapeYaml(String s)
+        => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }

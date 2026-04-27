@@ -1,6 +1,6 @@
-using System.Text.Json;
-using OneNoteMdExport.Graph;
 using Microsoft.Kiota.Abstractions;
+using OneNoteMdExport.Graph;
+using System.Text.Json;
 
 namespace OneNoteMdExport.Output;
 
@@ -11,7 +11,7 @@ namespace OneNoteMdExport.Output;
 public sealed class ManifestStore
 {
     private readonly String _path;
-    private ManifestDocument _manifest = new();
+    private readonly ManifestDocument _manifest = new();
 
     private static readonly JsonSerializerOptions JsonOpts =
         new() { WriteIndented = true };
@@ -21,7 +21,11 @@ public sealed class ManifestStore
         Directory.CreateDirectory(layout.Root);
         _path = Path.Combine(layout.Root, ".manifest.json");
 
-        if (!File.Exists(_path)) return;
+        if (!File.Exists(_path))
+        {
+            return;
+        }
+
         try
         {
             var json = File.ReadAllText(_path);

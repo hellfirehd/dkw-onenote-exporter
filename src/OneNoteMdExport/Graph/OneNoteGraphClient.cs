@@ -26,12 +26,16 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         if (opt.NotebookFilter is not null)
         {
             await foreach (var p in EnumerateByNotebookAsync(opt.NotebookFilter, ct))
+            {
                 yield return p;
+            }
         }
         else
         {
             await foreach (var p in EnumerateAllPagesAsync(ct))
+            {
                 yield return p;
+            }
         }
     }
 
@@ -45,7 +49,10 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
 
         await foreach (var notebook in EnumerateNotebooksAsync(ct))
         {
-            if (notebook.Id is null) continue;
+            if (notebook.Id is null)
+            {
+                continue;
+            }
 
             _logger.LogDebug("Notebook: {Notebook}", notebook.DisplayName);
 
@@ -81,7 +88,9 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         _logger.LogInformation("Enumerating sections in '{Notebook}'…", notebook.DisplayName);
 
         await foreach (var page in EnumerateNotebookPagesAsync(notebook.Id, ct))
+        {
             yield return page;
+        }
     }
 
     private async IAsyncEnumerable<Notebook> EnumerateNotebooksAsync(
@@ -99,9 +108,14 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         while (response is not null)
         {
             foreach (var notebook in response.Value ?? [])
+            {
                 yield return notebook;
+            }
 
-            if (response.OdataNextLink is null) break;
+            if (response.OdataNextLink is null)
+            {
+                break;
+            }
 
             var nextLink = response.OdataNextLink;
             response = await Retry.ExecuteAsync(
@@ -116,22 +130,32 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
     {
         await foreach (var section in EnumerateNotebookSectionsAsync(notebookId, ct))
         {
-            if (section.Id is null) continue;
+            if (section.Id is null)
+            {
+                continue;
+            }
 
             _logger.LogDebug("  Section: {Section}", section.DisplayName);
 
             await foreach (var page in EnumerateSectionPagesAsync(section.Id, ct))
+            {
                 yield return page;
+            }
         }
 
         await foreach (var group in EnumerateNotebookSectionGroupsAsync(notebookId, ct))
         {
-            if (group.Id is null) continue;
+            if (group.Id is null)
+            {
+                continue;
+            }
 
             _logger.LogDebug("  Section group: {SectionGroup}", group.DisplayName);
 
             await foreach (var page in EnumerateSectionGroupPagesAsync(group.Id, ct))
+            {
                 yield return page;
+            }
         }
     }
 
@@ -151,9 +175,14 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         while (response is not null)
         {
             foreach (var section in response.Value ?? [])
+            {
                 yield return section;
+            }
 
-            if (response.OdataNextLink is null) break;
+            if (response.OdataNextLink is null)
+            {
+                break;
+            }
 
             var nextLink = response.OdataNextLink;
             response = await Retry.ExecuteAsync(
@@ -178,9 +207,14 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         while (response is not null)
         {
             foreach (var group in response.Value ?? [])
+            {
                 yield return group;
+            }
 
-            if (response.OdataNextLink is null) break;
+            if (response.OdataNextLink is null)
+            {
+                break;
+            }
 
             var nextLink = response.OdataNextLink;
             response = await Retry.ExecuteAsync(
@@ -195,22 +229,32 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
     {
         await foreach (var section in EnumerateSectionGroupSectionsAsync(sectionGroupId, ct))
         {
-            if (section.Id is null) continue;
+            if (section.Id is null)
+            {
+                continue;
+            }
 
             _logger.LogDebug("    Section: {Section}", section.DisplayName);
 
             await foreach (var page in EnumerateSectionPagesAsync(section.Id, ct))
+            {
                 yield return page;
+            }
         }
 
         await foreach (var group in EnumerateChildSectionGroupsAsync(sectionGroupId, ct))
         {
-            if (group.Id is null) continue;
+            if (group.Id is null)
+            {
+                continue;
+            }
 
             _logger.LogDebug("    Section group: {SectionGroup}", group.DisplayName);
 
             await foreach (var page in EnumerateSectionGroupPagesAsync(group.Id, ct))
+            {
                 yield return page;
+            }
         }
     }
 
@@ -230,9 +274,14 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         while (response is not null)
         {
             foreach (var section in response.Value ?? [])
+            {
                 yield return section;
+            }
 
-            if (response.OdataNextLink is null) break;
+            if (response.OdataNextLink is null)
+            {
+                break;
+            }
 
             var nextLink = response.OdataNextLink;
             response = await Retry.ExecuteAsync(
@@ -257,9 +306,14 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         while (response is not null)
         {
             foreach (var group in response.Value ?? [])
+            {
                 yield return group;
+            }
 
-            if (response.OdataNextLink is null) break;
+            if (response.OdataNextLink is null)
+            {
+                break;
+            }
 
             var nextLink = response.OdataNextLink;
             response = await Retry.ExecuteAsync(
@@ -284,9 +338,14 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
         while (pageResponse is not null)
         {
             foreach (var page in pageResponse.Value ?? [])
+            {
                 yield return OneNotePageInfo.FromGraph(page);
+            }
 
-            if (pageResponse.OdataNextLink is null) break;
+            if (pageResponse.OdataNextLink is null)
+            {
+                break;
+            }
 
             var nextLink = pageResponse.OdataNextLink;
             pageResponse = await Retry.ExecuteAsync(
@@ -333,7 +392,10 @@ public sealed class OneNoteGraphClient(GraphServiceClient g, ILogger<OneNoteGrap
 
     private static async Task<String> ReadStreamAsync(Stream? stream, CancellationToken ct)
     {
-        if (stream is null) return String.Empty;
+        if (stream is null)
+        {
+            return String.Empty;
+        }
 
         using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
         return await reader.ReadToEndAsync(ct);

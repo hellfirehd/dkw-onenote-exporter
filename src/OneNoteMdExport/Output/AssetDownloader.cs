@@ -1,14 +1,13 @@
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
-using Microsoft.Kiota.Abstractions;
 using OneNoteMdExport.Cli;
 using OneNoteMdExport.Graph;
 using OneNoteMdExport.Util;
+using System.Text.RegularExpressions;
 
 namespace OneNoteMdExport.Output;
 
-public sealed class AssetDownloader(
+public sealed partial class AssetDownloader(
     GraphServiceClient g,
     PathLayout layout,
     ExportOptions opt,
@@ -23,9 +22,7 @@ public sealed class AssetDownloader(
     private readonly Dictionary<String, String> _cache = [];
 
     // Extracts the OneNote resource ID from a Graph resource URL
-    private static readonly Regex ResourceIdRegex = new(
-        @"/onenote/resources/([^/?]+)/content",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ResourceIdRegex = ExtractResourceId();
 
     /// <summary>
     /// Downloads the resource at <paramref name="url"/> into the page's assets directory
@@ -37,10 +34,16 @@ public sealed class AssetDownloader(
         String? mimeType,
         CancellationToken ct = default)
     {
-        if (!ShouldDownload(mimeType)) return null;
+        if (!ShouldDownload(mimeType))
+        {
+            return null;
+        }
 
         // Return cached path for the same resource
-        if (_cache.TryGetValue(url, out var cached)) return cached;
+        if (_cache.TryGetValue(url, out var cached))
+        {
+            return cached;
+        }
 
         var match = ResourceIdRegex.Match(url);
         if (!match.Success)
@@ -53,11 +56,14 @@ public sealed class AssetDownloader(
 
         try
         {
-            using var stream = await Retry.ExecuteAsync(
+            await using var stream = await Retry.ExecuteAsync(
                 () => _g.Me.Onenote.Resources[resourceId].Content.GetAsync(cancellationToken: ct),
                 logger: _logger, ct: ct);
 
-            if (stream is null) return null;
+            if (stream is null)
+            {
+                return null;
+            }
 
             var assetsDir = _layout.AssetsDir(page);
             Directory.CreateDirectory(assetsDir);
@@ -68,8 +74,10 @@ public sealed class AssetDownloader(
             var fileName = $"{hash}{ext}";
             var filePath = Path.Combine(assetsDir, fileName);
 
-            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            await using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
                 await stream.CopyToAsync(fs, ct);
+            }
 
             // Return a relative path (using forward slashes for Markdown portability)
             var pageDir = Path.GetDirectoryName(_layout.PagePath(page))!;
@@ -88,9 +96,16 @@ public sealed class AssetDownloader(
 
     private Boolean ShouldDownload(String? mimeType)
     {
-        if (mimeType is null) return _opt.IncludeImages; // assume image when unknown
+        if (mimeType is null)
+        {
+            return _opt.IncludeImages; // assume image when unknown
+        }
+
         if (mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
             return _opt.IncludeImages;
+        }
+
         return _opt.IncludeAttachments;
     }
 
@@ -116,4 +131,7 @@ public sealed class AssetDownloader(
         var ext = Path.GetExtension(urlPath);
         return String.IsNullOrEmpty(ext) ? ".bin" : ext;
     }
+
+    [GeneratedRegex(@"/onenote/resources/([^/?]+)/content", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    private static partial Regex ExtractResourceId();
 }

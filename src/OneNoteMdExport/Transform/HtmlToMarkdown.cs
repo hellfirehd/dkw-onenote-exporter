@@ -12,7 +12,10 @@ public sealed class HtmlToMarkdown(ExportOptions opt, ILogger<HtmlToMarkdown> lo
 
     public async Task<String> ConvertAsync(String html, CancellationToken ct = default)
     {
-        if (String.IsNullOrWhiteSpace(html)) return String.Empty;
+        if (String.IsNullOrWhiteSpace(html))
+        {
+            return String.Empty;
+        }
 
         return _opt.UsePandoc
             ? await ConvertWithPandocAsync(html, ct)
@@ -63,14 +66,23 @@ public sealed class HtmlToMarkdown(ExportOptions opt, ILogger<HtmlToMarkdown> lo
             await proc.WaitForExitAsync(ct);
 
             if (proc.ExitCode != 0)
+            {
                 _logger.LogWarning("pandoc exited {Code}: {Err}", proc.ExitCode, stderr);
+            }
 
             return await File.ReadAllTextAsync(tempOut, System.Text.Encoding.UTF8, ct);
         }
         finally
         {
-            if (File.Exists(tempIn)) File.Delete(tempIn);
-            if (File.Exists(tempOut)) File.Delete(tempOut);
+            if (File.Exists(tempIn))
+            {
+                File.Delete(tempIn);
+            }
+
+            if (File.Exists(tempOut))
+            {
+                File.Delete(tempOut);
+            }
         }
     }
 }

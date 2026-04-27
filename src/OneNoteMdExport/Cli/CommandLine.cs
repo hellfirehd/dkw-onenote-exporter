@@ -30,7 +30,11 @@ public static class CommandLine
 
         foreach (var path in candidates)
         {
-            if (!File.Exists(path)) continue;
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+
             try
             {
                 var json = File.ReadAllText(path);
@@ -74,23 +78,32 @@ public static class CommandLine
             switch (args[i])
             {
                 case "--out" when i + 1 < args.Length:
-                    outputDir = args[++i]; break;
+                    outputDir = args[++i];
+                    break;
                 case "--pandoc":
-                    usePandoc = true; break;
+                    usePandoc = true;
+                    break;
                 case "--pandoc-path" when i + 1 < args.Length:
-                    pandocPath = args[++i]; break;
+                    pandocPath = args[++i];
+                    break;
                 case "--no-images":
-                    noImages = true; break;
+                    noImages = true;
+                    break;
                 case "--no-attachments":
-                    noAttachments = true; break;
+                    noAttachments = true;
+                    break;
                 case "--no-front-matter":
-                    noFrontMatter = true; break;
+                    noFrontMatter = true;
+                    break;
                 case "--device-code":
-                    deviceCode = true; break;
+                    deviceCode = true;
+                    break;
                 case "--notebook" when i + 1 < args.Length:
-                    notebook = args[++i]; break;
+                    notebook = args[++i];
+                    break;
                 case "--verbose" or "-v":
-                    verbose = true; break;
+                    verbose = true;
+                    break;
             }
         }
 
@@ -126,22 +139,25 @@ public static class CommandLine
           --help, -h           Show this help
         """);
 
-    private static String? Str(JsonElement el, String prop) =>
-        el.ValueKind == JsonValueKind.Object &&
-        el.TryGetProperty(prop, out var v) &&
-        v.ValueKind == JsonValueKind.String
-            ? v.GetString() : null;
+    private static String? Str(JsonElement el, String prop)
+        => el.ValueKind == JsonValueKind.Object
+        && el.TryGetProperty(prop, out var v)
+        && v.ValueKind == JsonValueKind.String
+            ? v.GetString()
+            : null;
 
-    private static Boolean? Bool(JsonElement el, String prop) =>
-        el.ValueKind == JsonValueKind.Object &&
-        el.TryGetProperty(prop, out var v) &&
-        v.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? v.GetBoolean() : null;
+    private static Boolean? Bool(JsonElement el, String prop)
+        => el.ValueKind == JsonValueKind.Object
+        && el.TryGetProperty(prop, out var v)
+        && v.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? v.GetBoolean()
+            : null;
 
-    private static Int32? Int(JsonElement el, String prop) =>
-        el.ValueKind == JsonValueKind.Object &&
-        el.TryGetProperty(prop, out var v) &&
-        v.ValueKind == JsonValueKind.Number &&
-        v.TryGetInt32(out var value)
-            ? value : null;
+    private static Int32? Int(JsonElement el, String prop)
+        => el.ValueKind == JsonValueKind.Object
+        && el.TryGetProperty(prop, out var v)
+        && v.ValueKind == JsonValueKind.Number
+        && v.TryGetInt32(out var value)
+            ? value
+            : null;
 }

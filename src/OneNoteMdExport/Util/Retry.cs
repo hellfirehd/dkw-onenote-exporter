@@ -103,13 +103,17 @@ public static class Retry
         {
             var header = values.FirstOrDefault();
             if (header is not null && Int32.TryParse(header, out var secs))
+            {
                 return TimeSpan.FromSeconds(secs);
+            }
 
             if (header is not null && DateTimeOffset.TryParse(header, out var retryAt))
             {
                 var delay = retryAt - DateTimeOffset.UtcNow;
                 if (delay > TimeSpan.Zero)
+                {
                     return delay;
+                }
             }
         }
 

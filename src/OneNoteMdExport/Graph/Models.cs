@@ -10,8 +10,8 @@ public sealed record OneNotePageInfo(
     DateTimeOffset LastModifiedTime,
     String? ContentUrl)
 {
-    internal static OneNotePageInfo FromGraph(Microsoft.Graph.Models.OnenotePage p) =>
-        new(
+    internal static OneNotePageInfo FromGraph(Microsoft.Graph.Models.OnenotePage p)
+        => new(
             p.Id ?? throw new InvalidOperationException("Page has no ID"),
             p.Title ?? "Untitled",
             p.ParentNotebook?.DisplayName ?? "Unknown Notebook",

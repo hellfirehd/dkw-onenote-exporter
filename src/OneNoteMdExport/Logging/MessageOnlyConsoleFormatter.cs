@@ -23,10 +23,14 @@ public sealed class MessageOnlyConsoleFormatter : ConsoleFormatter, IDisposable
     {
         var message = logEntry.Formatter?.Invoke(logEntry.State, null);
         if (String.IsNullOrWhiteSpace(message))
+        {
             return;
+        }
 
         if (!String.IsNullOrEmpty(_options.TimestampFormat))
+        {
             textWriter.Write(DateTimeOffset.Now.ToString(_options.TimestampFormat));
+        }
 
         textWriter.WriteLine(message);
     }

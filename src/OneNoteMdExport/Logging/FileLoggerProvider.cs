@@ -40,11 +40,15 @@ public sealed class FileLoggerProvider : ILoggerProvider
             ArgumentNullException.ThrowIfNull(formatter);
 
             if (!IsEnabled(logLevel))
+            {
                 return;
+            }
 
             var message = formatter(state, exception);
             if (String.IsNullOrWhiteSpace(message) && exception is null)
+            {
                 return;
+            }
 
             var entry = new StringBuilder()
                 .Append(DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz"))

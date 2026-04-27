@@ -20,9 +20,11 @@ public sealed class GraphAuth(ExportOptions opt, ILogger<GraphAuth> logger)
     public async Task<GraphServiceClient> CreateGraphClientAsync()
     {
         if (String.IsNullOrWhiteSpace(_opt.ClientId))
+        {
             throw new InvalidOperationException(
                 "ClientId is missing. Copy appsettings.example.json → appsettings.json " +
                 "and fill in your Azure AD app registration details.");
+        }
 
         var app = PublicClientApplicationBuilder
             .Create(_opt.ClientId)
@@ -31,7 +33,9 @@ public sealed class GraphAuth(ExportOptions opt, ILogger<GraphAuth> logger)
             .Build();
 
         if (_opt.UsePersistentTokenCache)
+        {
             MsalTokenCachePersistence.Enable(app.UserTokenCache, GetCachePath(), _logger);
+        }
 
         var tokenProvider = new MsalTokenProvider(app, Scopes, _opt.UseDeviceCode, _logger);
         var authProvider = new BaseBearerTokenAuthenticationProvider(tokenProvider);
@@ -59,7 +63,9 @@ internal static class MsalTokenCachePersistence
             lock (Sync)
             {
                 if (!File.Exists(cachePath))
+                {
                     return;
+                }
 
                 var data = File.ReadAllBytes(cachePath);
                 args.TokenCache.DeserializeMsalV3(data, shouldClearExistingCache: true);
@@ -69,7 +75,9 @@ internal static class MsalTokenCachePersistence
         tokenCache.SetAfterAccess(args =>
         {
             if (!args.HasStateChanged)
+            {
                 return;
+            }
 
             lock (Sync)
             {
