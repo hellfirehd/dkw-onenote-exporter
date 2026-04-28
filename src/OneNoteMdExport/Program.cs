@@ -53,6 +53,7 @@ internal static class Program
             var oneNote = new OneNoteGraphClient(graphClient, loggerFactory.CreateLogger<OneNoteGraphClient>());
             var layout = new PathLayout(options);
             var manifest = new ManifestStore(layout);
+            manifest.MigrateOldFileNamesAsync();
             var assets = new AssetDownloader(graphClient, layout, options, loggerFactory.CreateLogger<AssetDownloader>());
             var normalizer = new OneNoteHtmlNormalizer(options, loggerFactory.CreateLogger<OneNoteHtmlNormalizer>());
             var converter = new HtmlToMarkdown(options, loggerFactory.CreateLogger<HtmlToMarkdown>());
