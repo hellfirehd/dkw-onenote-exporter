@@ -7,7 +7,7 @@ namespace OneNoteMdExport.Logging;
 
 public sealed class MessageOnlyConsoleFormatter : ConsoleFormatter, IDisposable
 {
-    public const string FormatterName = "message-only";
+    public const String FormatterName = "message-only";
 
     private readonly IDisposable? _optionsReloadToken;
     private SimpleConsoleFormatterOptions _options;
@@ -22,11 +22,15 @@ public sealed class MessageOnlyConsoleFormatter : ConsoleFormatter, IDisposable
     public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
     {
         var message = logEntry.Formatter?.Invoke(logEntry.State, null);
-        if (string.IsNullOrWhiteSpace(message))
+        if (String.IsNullOrWhiteSpace(message))
+        {
             return;
+        }
 
-        if (!string.IsNullOrEmpty(_options.TimestampFormat))
+        if (!String.IsNullOrEmpty(_options.TimestampFormat))
+        {
             textWriter.Write(DateTimeOffset.Now.ToString(_options.TimestampFormat));
+        }
 
         textWriter.WriteLine(message);
     }

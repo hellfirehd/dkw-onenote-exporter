@@ -6,29 +6,25 @@ using OneNoteMdExport.Cli;
 
 namespace OneNoteMdExport.Auth;
 
-public sealed class GraphAuth
+public sealed class GraphAuth(ExportOptions opt, ILogger<GraphAuth> logger)
 {
     // Delegated scopes required by OneNote API.
     // Notes.Read is sufficient for exporting the signed-in user's notebooks and
     // is supported for personal Microsoft accounts.
-    private static readonly string[] Scopes =
+    private static readonly String[] Scopes =
         ["Notes.Read", "User.Read"];
 
-    private readonly ExportOptions _opt;
-    private readonly ILogger<GraphAuth> _logger;
-
-    public GraphAuth(ExportOptions opt, ILogger<GraphAuth> logger)
-    {
-        _opt = opt;
-        _logger = logger;
-    }
+    private readonly ExportOptions _opt = opt;
+    private readonly ILogger<GraphAuth> _logger = logger;
 
     public async Task<GraphServiceClient> CreateGraphClientAsync()
     {
-        if (string.IsNullOrWhiteSpace(_opt.ClientId))
+        if (String.IsNullOrWhiteSpace(_opt.ClientId))
+        {
             throw new InvalidOperationException(
                 "ClientId is missing. Copy appsettings.example.json → appsettings.json " +
                 "and fill in your Azure AD app registration details.");
+        }
 
         var app = PublicClientApplicationBuilder
             .Create(_opt.ClientId)
@@ -37,14 +33,16 @@ public sealed class GraphAuth
             .Build();
 
         if (_opt.UsePersistentTokenCache)
+        {
             MsalTokenCachePersistence.Enable(app.UserTokenCache, GetCachePath(), _logger);
+        }
 
         var tokenProvider = new MsalTokenProvider(app, Scopes, _opt.UseDeviceCode, _logger);
         var authProvider = new BaseBearerTokenAuthenticationProvider(tokenProvider);
         return new GraphServiceClient(authProvider);
     }
 
-    private string GetCachePath()
+    private String GetCachePath()
     {
         var root = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -56,15 +54,18 @@ public sealed class GraphAuth
 
 internal static class MsalTokenCachePersistence
 {
-    private static readonly object Sync = new();
+    private static readonly Object Sync = new();
 
-    public static void Enable(ITokenCache tokenCache, string cachePath, ILogger logger)
+    public static void Enable(ITokenCache tokenCache, String cachePath, ILogger logger)
     {
         tokenCache.SetBeforeAccess(args =>
         {
             lock (Sync)
             {
-                if (!File.Exists(cachePath)) return;
+                if (!File.Exists(cachePath))
+                {
+                    return;
+                }
 
                 var data = File.ReadAllBytes(cachePath);
                 args.TokenCache.DeserializeMsalV3(data, shouldClearExistingCache: true);
@@ -73,7 +74,10 @@ internal static class MsalTokenCachePersistence
 
         tokenCache.SetAfterAccess(args =>
         {
-            if (!args.HasStateChanged) return;
+            if (!args.HasStateChanged)
+            {
+                return;
+            }
 
             lock (Sync)
             {
@@ -87,31 +91,23 @@ internal static class MsalTokenCachePersistence
 }
 
 /// <summary>Bridges MSAL to the Kiota authentication abstraction used by Graph SDK v5.</summary>
-internal sealed class MsalTokenProvider : IAccessTokenProvider
+internal sealed class MsalTokenProvider(
+    IPublicClientApplication app,
+    String[] scopes,
+    Boolean useDeviceCode,
+    ILogger logger) : IAccessTokenProvider
 {
-    private readonly IPublicClientApplication _app;
-    private readonly string[] _scopes;
-    private readonly bool _useDeviceCode;
-    private readonly ILogger _logger;
+    private readonly IPublicClientApplication _app = app;
+    private readonly String[] _scopes = scopes;
+    private readonly Boolean _useDeviceCode = useDeviceCode;
+    private readonly ILogger _logger = logger;
 
     public AllowedHostsValidator AllowedHostsValidator { get; } =
         new(["graph.microsoft.com"]);
 
-    public MsalTokenProvider(
-        IPublicClientApplication app,
-        string[] scopes,
-        bool useDeviceCode,
-        ILogger logger)
-    {
-        _app = app;
-        _scopes = scopes;
-        _useDeviceCode = useDeviceCode;
-        _logger = logger;
-    }
-
-    public async Task<string> GetAuthorizationTokenAsync(
+    public async Task<String> GetAuthorizationTokenAsync(
         Uri uri,
-        Dictionary<string, object>? additionalAuthenticationContext = null,
+        Dictionary<String, Object>? additionalAuthenticationContext = null,
         CancellationToken cancellationToken = default)
     {
         // Try silent (cached) token first

@@ -5,13 +5,13 @@ namespace OneNoteMdExport.Util;
 
 public static class Retry
 {
-    private static readonly int[] RetryableStatus = [429, 500, 502, 503, 504];
-    private static readonly object SyncRoot = new();
+    private static readonly Int32[] RetryableStatus = [429, 500, 502, 503, 504];
+    private static readonly Object SyncRoot = new();
     private static Throttle _minuteThrottle = new(100, 60.0);
     private static Throttle _hourThrottle = new(350, 3600.0);
     private static SemaphoreSlim _concurrentRequests = new(5, 5);
 
-    public static void Configure(int requestsPerMinute, int requestsPerHour, int concurrentRequests)
+    public static void Configure(Int32 requestsPerMinute, Int32 requestsPerHour, Int32 concurrentRequests)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(requestsPerMinute);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(requestsPerHour);
@@ -43,11 +43,11 @@ public static class Retry
     /// </summary>
     public static async Task<T> ExecuteAsync<T>(
         Func<Task<T>> action,
-        int maxRetries = 5,
+        Int32 maxRetries = 5,
         ILogger? logger = null,
         CancellationToken ct = default)
     {
-        for (int attempt = 0; attempt < maxRetries; attempt++)
+        for (var attempt = 0; attempt < maxRetries; attempt++)
         {
             try
             {
@@ -58,7 +58,7 @@ public static class Retry
                 var delay = RetryDelay(ex, attempt);
                 logger?.LogWarning(
                     "HTTP {Status} (attempt {A}/{Max}) — retrying in {S}s",
-                    ex.ResponseStatusCode, attempt + 1, maxRetries, (int)delay.TotalSeconds);
+                    ex.ResponseStatusCode, attempt + 1, maxRetries, (Int32)delay.TotalSeconds);
                 await Task.Delay(delay, ct);
             }
             catch (HttpRequestException ex)
@@ -66,7 +66,7 @@ public static class Retry
                 var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
                 logger?.LogWarning(
                     "Network error (attempt {A}/{Max}) — retrying in {S}s: {Msg}",
-                    attempt + 1, maxRetries, (int)delay.TotalSeconds, ex.Message);
+                    attempt + 1, maxRetries, (Int32)delay.TotalSeconds, ex.Message);
                 await Task.Delay(delay, ct);
             }
         }
@@ -95,21 +95,25 @@ public static class Retry
         }
     }
 
-    private static TimeSpan RetryDelay(ApiException ex, int attempt)
+    private static TimeSpan RetryDelay(ApiException ex, Int32 attempt)
     {
         // Honour Retry-After header when present
         if (ex.ResponseHeaders is not null &&
             ex.ResponseHeaders.TryGetValue("Retry-After", out var values))
         {
             var header = values.FirstOrDefault();
-            if (header is not null && int.TryParse(header, out var secs))
+            if (header is not null && Int32.TryParse(header, out var secs))
+            {
                 return TimeSpan.FromSeconds(secs);
+            }
 
             if (header is not null && DateTimeOffset.TryParse(header, out var retryAt))
             {
                 var delay = retryAt - DateTimeOffset.UtcNow;
                 if (delay > TimeSpan.Zero)
+                {
                     return delay;
+                }
             }
         }
 

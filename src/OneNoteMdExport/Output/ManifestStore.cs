@@ -1,6 +1,6 @@
-using System.Text.Json;
-using OneNoteMdExport.Graph;
 using Microsoft.Kiota.Abstractions;
+using OneNoteMdExport.Graph;
+using System.Text.Json;
 
 namespace OneNoteMdExport.Output;
 
@@ -10,18 +10,24 @@ namespace OneNoteMdExport.Output;
 /// </summary>
 public sealed class ManifestStore
 {
-    private readonly string _path;
-    private ManifestDocument _manifest = new();
+    private readonly String _path;
+    private readonly PathLayout _layout;
+    private readonly ManifestDocument _manifest = new();
 
     private static readonly JsonSerializerOptions JsonOpts =
         new() { WriteIndented = true };
 
     public ManifestStore(PathLayout layout)
     {
+        _layout = layout;
         Directory.CreateDirectory(layout.Root);
         _path = Path.Combine(layout.Root, ".manifest.json");
 
-        if (!File.Exists(_path)) return;
+        if (!File.Exists(_path))
+        {
+            return;
+        }
+
         try
         {
             var json = File.ReadAllText(_path);
@@ -33,7 +39,7 @@ public sealed class ManifestStore
             }
             else
             {
-                var legacy = JsonSerializer.Deserialize<Dictionary<string, DateTimeOffset>>(json) ?? [];
+                var legacy = JsonSerializer.Deserialize<Dictionary<String, DateTimeOffset>>(json) ?? [];
                 _manifest = UpgradeLegacy(legacy);
             }
 
@@ -68,6 +74,53 @@ public sealed class ManifestStore
         return ManifestDecision.Process;
     }
 
+    /// <summary>
+    /// Renames any existing files with the old date-prefixed naming to the new naming scheme.
+    /// This handles the migration when the filename format changes from "{date} - {title}.md" to "{title}.md".
+    /// </summary>
+    public void MigrateOldFileNamesAsync()
+    {
+        try
+        {
+            foreach (var state in _manifest.Pages.Values)
+            {
+                // Try to find and rename files with old naming pattern
+                var notebookDirs = Directory.EnumerateDirectories(_layout.Root);
+                foreach (var notebookDir in notebookDirs)
+                {
+                    if (Path.GetFileName(notebookDir) == ".manifest.json")
+                        continue;
+
+                    var sectionDirs = Directory.EnumerateDirectories(notebookDir);
+                    foreach (var sectionDir in sectionDirs)
+                    {
+                        var files = Directory.EnumerateFiles(sectionDir, "*.md");
+                        foreach (var file in files)
+                        {
+                            var fileName = Path.GetFileName(file);
+                            // Old pattern: "yyyy-MM-dd - {title}.md"
+                            if (HasLegacyDatePrefix(fileName))
+                            {
+                                var newFileName = fileName.Substring(13); // Remove "yyyy-MM-dd - "
+                                var newPath = Path.Combine(sectionDir, newFileName);
+
+                                if (!File.Exists(newPath))
+                                {
+                                    File.Move(file, newPath, overwrite: false);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Silently ignore migration errors; they don't block export
+            Console.Error.WriteLine(ex.ToString());
+        }
+    }
+
     public async Task MarkSuccessAsync(OneNotePageInfo page, CancellationToken ct = default)
     {
         var state = GetOrCreateState(page.Id);
@@ -99,7 +152,7 @@ public sealed class ManifestStore
         await SaveAsync(ct);
     }
 
-    private ManifestPageState GetOrCreateState(string pageId)
+    private ManifestPageState GetOrCreateState(String pageId)
     {
         if (_manifest.Pages.TryGetValue(pageId, out var state))
         {
@@ -117,7 +170,23 @@ public sealed class ManifestStore
         await File.WriteAllTextAsync(_path, json, ct);
     }
 
-    private static ManifestDocument UpgradeLegacy(Dictionary<string, DateTimeOffset> legacy)
+    private static Boolean HasLegacyDatePrefix(String fileName)
+        => fileName.Length > 13 &&
+           Char.IsDigit(fileName[0]) &&
+           Char.IsDigit(fileName[1]) &&
+           Char.IsDigit(fileName[2]) &&
+           Char.IsDigit(fileName[3]) &&
+           fileName[4] == '-' &&
+           Char.IsDigit(fileName[5]) &&
+           Char.IsDigit(fileName[6]) &&
+           fileName[7] == '-' &&
+           Char.IsDigit(fileName[8]) &&
+           Char.IsDigit(fileName[9]) &&
+           fileName[10] == ' ' &&
+           fileName[11] == '-' &&
+           fileName[12] == ' ';
+
+    private static ManifestDocument UpgradeLegacy(Dictionary<String, DateTimeOffset> legacy)
     {
         var manifest = new ManifestDocument();
 
@@ -145,17 +214,17 @@ public enum ManifestDecision
 
 public sealed class ManifestDocument
 {
-    public int SchemaVersion { get; set; } = 2;
-    public int ActiveSweep { get; set; } = 1;
-    public Dictionary<string, ManifestPageState> Pages { get; set; } = [];
+    public Int32 SchemaVersion { get; set; } = 2;
+    public Int32 ActiveSweep { get; set; } = 1;
+    public Dictionary<String, ManifestPageState> Pages { get; set; } = [];
 }
 
 public sealed class ManifestPageState
 {
     public DateTimeOffset? LastSucceededModifiedTime { get; set; }
     public DateTimeOffset? LastAttemptedModifiedTime { get; set; }
-    public int? LastAttemptSweep { get; set; }
-    public string? LastOutcome { get; set; }
-    public int? LastErrorStatus { get; set; }
-    public string? LastErrorMessage { get; set; }
+    public Int32? LastAttemptSweep { get; set; }
+    public String? LastOutcome { get; set; }
+    public Int32? LastErrorStatus { get; set; }
+    public String? LastErrorMessage { get; set; }
 }

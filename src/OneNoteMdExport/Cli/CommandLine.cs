@@ -4,7 +4,7 @@ namespace OneNoteMdExport.Cli;
 
 public static class CommandLine
 {
-    public static ExportOptions? Parse(string[] args)
+    public static ExportOptions? Parse(String[] args)
     {
         if (args.Contains("--help") || args.Contains("-h"))
         {
@@ -30,7 +30,11 @@ public static class CommandLine
 
         foreach (var path in candidates)
         {
-            if (!File.Exists(path)) continue;
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+
             try
             {
                 var json = File.ReadAllText(path);
@@ -43,7 +47,7 @@ public static class CommandLine
                 return new ExportOptions
                 {
                     TenantId = Str(ad, "TenantId") ?? "common",
-                    ClientId = Str(ad, "ClientId") ?? string.Empty,
+                    ClientId = Str(ad, "ClientId") ?? String.Empty,
                     RedirectUri = Str(ad, "RedirectUri") ?? "http://localhost",
                     UsePersistentTokenCache = Bool(ad, "UsePersistentTokenCache") ?? false,
                     OutputDir = Str(exp, "OutputDir") ?? "export",
@@ -63,34 +67,43 @@ public static class CommandLine
         return new ExportOptions();
     }
 
-    private static ExportOptions ApplyArgs(ExportOptions opts, string[] args)
+    private static ExportOptions ApplyArgs(ExportOptions opts, String[] args)
     {
-        string? outputDir = null, pandocPath = null, notebook = null;
-        bool? usePandoc = null, noImages = null, noAttachments = null,
+        String? outputDir = null, pandocPath = null, notebook = null;
+        Boolean? usePandoc = null, noImages = null, noAttachments = null,
               noFrontMatter = null, deviceCode = null, verbose = null;
 
-        for (int i = 0; i < args.Length; i++)
+        for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
                 case "--out" when i + 1 < args.Length:
-                    outputDir = args[++i]; break;
+                    outputDir = args[++i];
+                    break;
                 case "--pandoc":
-                    usePandoc = true; break;
+                    usePandoc = true;
+                    break;
                 case "--pandoc-path" when i + 1 < args.Length:
-                    pandocPath = args[++i]; break;
+                    pandocPath = args[++i];
+                    break;
                 case "--no-images":
-                    noImages = true; break;
+                    noImages = true;
+                    break;
                 case "--no-attachments":
-                    noAttachments = true; break;
+                    noAttachments = true;
+                    break;
                 case "--no-front-matter":
-                    noFrontMatter = true; break;
+                    noFrontMatter = true;
+                    break;
                 case "--device-code":
-                    deviceCode = true; break;
+                    deviceCode = true;
+                    break;
                 case "--notebook" when i + 1 < args.Length:
-                    notebook = args[++i]; break;
+                    notebook = args[++i];
+                    break;
                 case "--verbose" or "-v":
-                    verbose = true; break;
+                    verbose = true;
+                    break;
             }
         }
 
@@ -126,22 +139,25 @@ public static class CommandLine
           --help, -h           Show this help
         """);
 
-    private static string? Str(JsonElement el, string prop) =>
-        el.ValueKind == JsonValueKind.Object &&
-        el.TryGetProperty(prop, out var v) &&
-        v.ValueKind == JsonValueKind.String
-            ? v.GetString() : null;
+    private static String? Str(JsonElement el, String prop)
+        => el.ValueKind == JsonValueKind.Object
+        && el.TryGetProperty(prop, out var v)
+        && v.ValueKind == JsonValueKind.String
+            ? v.GetString()
+            : null;
 
-    private static bool? Bool(JsonElement el, string prop) =>
-        el.ValueKind == JsonValueKind.Object &&
-        el.TryGetProperty(prop, out var v) &&
-        v.ValueKind is JsonValueKind.True or JsonValueKind.False
-            ? v.GetBoolean() : null;
+    private static Boolean? Bool(JsonElement el, String prop)
+        => el.ValueKind == JsonValueKind.Object
+        && el.TryGetProperty(prop, out var v)
+        && v.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? v.GetBoolean()
+            : null;
 
-    private static int? Int(JsonElement el, string prop) =>
-        el.ValueKind == JsonValueKind.Object &&
-        el.TryGetProperty(prop, out var v) &&
-        v.ValueKind == JsonValueKind.Number &&
-        v.TryGetInt32(out var value)
-            ? value : null;
+    private static Int32? Int(JsonElement el, String prop)
+        => el.ValueKind == JsonValueKind.Object
+        && el.TryGetProperty(prop, out var v)
+        && v.ValueKind == JsonValueKind.Number
+        && v.TryGetInt32(out var value)
+            ? value
+            : null;
 }

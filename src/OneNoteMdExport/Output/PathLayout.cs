@@ -4,28 +4,25 @@ using OneNoteMdExport.Util;
 
 namespace OneNoteMdExport.Output;
 
-public sealed class PathLayout
+public sealed class PathLayout(ExportOptions opt)
 {
-    private readonly ExportOptions _opt;
+    private readonly ExportOptions _opt = opt;
 
-    public PathLayout(ExportOptions opt) => _opt = opt;
-
-    public string Root => Path.GetFullPath(_opt.OutputDir);
+    public String Root => Path.GetFullPath(_opt.OutputDir);
 
     /// <summary>
     /// Returns the output path for a page:
-    /// <c>{Root}/{Notebook}/{Section}/{CreatedDate} - {Title}.md</c>
+    /// <c>{Root}/{Notebook}/{Section}/{Title}.md</c>
     /// </summary>
-    public string PagePath(OneNotePageInfo p)
+    public String PagePath(OneNotePageInfo p)
     {
         var notebook = Slug.FolderName(p.NotebookName);
-        var section  = Slug.FolderName(p.SectionName);
-        var date     = p.CreatedTime.ToString("yyyy-MM-dd");
-        var title    = Slug.FileName(p.Title);
+        var section = Slug.FolderName(p.SectionName);
+        var title = Slug.FileName(p.Title);
 
-        return Path.Combine(Root, notebook, section, $"{date} - {title}.md");
+        return Path.Combine(Root, notebook, section, $"{title}.md");
     }
 
-    public string AssetsDir(OneNotePageInfo p) =>
-        Path.Combine(Path.GetDirectoryName(PagePath(p))!, "assets");
+    public String AssetsDir(OneNotePageInfo p)
+        => Path.Combine(Path.GetDirectoryName(PagePath(p))!, "assets");
 }
