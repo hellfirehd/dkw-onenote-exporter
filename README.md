@@ -52,10 +52,12 @@ By following the steps below, you will create your own Azure app registration an
    - **Redirect URI:**  
      - Platform: **Public client / native**  
      - URI: `http://localhost`
+   - Authentication (Preview) > Settings (Tab)
+       - Enable: Allow public client flows.
 
 2. Copy your:
+ 
    - **Application (client) ID**  
-   - **Directory (tenant) ID**
 
 3. Add delegated Microsoft Graph permissions:
 
@@ -86,7 +88,7 @@ Edit `appsettings.json`:
 ```json
 {
   "AzureAd": {
-    "TenantId": "common",
+    "TenantId": "consumers",
     "ClientId": "<your-application-client-id>",
     "RedirectUri": "http://localhost",
     "UsePersistentTokenCache": false
@@ -161,11 +163,11 @@ The exporter already retries and paces requests, but large exports can still hit
 export/
   Personal Notebook/
     Quick Notes/
-      2024-01-15 - Shopping list.md
+      Shopping list.md
       assets/
         a1b2c3d4.png
     Work/
-      2023-06-01 - Meeting notes.md
+      Meeting notes.md
   Work Notebook/
     ...
   .manifest.json   ← tracks incremental export state
@@ -204,6 +206,7 @@ This makes the exporter safe to run repeatedly — ideal for large notebooks or 
 
 These options are on the roadmap:
 
+- `--list-notebooks` — list notebooks without exporting content
 - `--section <name>` — export only a specific section  
 - `--max-pages <n>` — limit processing for testing or throttling  
 - `--continue-on-error` — keep going even if a page fails  
@@ -220,7 +223,7 @@ If you want to contribute, PRs are welcome.
 | **ReverseMarkdown** (default) | Built-in NuGet package | Simple, fast, no external dependencies   |
 | **Pandoc**                    | External binary        | Best fidelity; handles tricky HTML cases |
 
-Both produce GitHub‑Flavored Markdown with tables, fenced code blocks, and task lists.
+Both produce GitHub‑Flavored Markdown with tables, fenced code blocks, and task lists. Pandoc is largely untested.
 
 ---
 
